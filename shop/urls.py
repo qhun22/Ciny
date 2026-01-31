@@ -72,7 +72,8 @@ urlpatterns = [
     
     # Địa chỉ giao hàng
     path('profile/address/add/', views.address_add, name='address_add'),
-    path('profile/address/default/<int:address_id>/', views.address_set_default, name='address_set_default'),
+    path('profile/address/default/', views.address_set_default_post, name='address_set_default'),
+    path('profile/address/default/<int:address_id>/', views.address_set_default, name='address_set_default_id'),
     path('profile/address/delete/<int:address_id>/', views.address_delete, name='address_delete'),
     
     # Voucher của user

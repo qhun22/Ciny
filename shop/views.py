@@ -6,6 +6,7 @@ Các view sử dụng function-based views để dễ hiểu cho sinh viên.
 """
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponseRedirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -591,6 +592,35 @@ def address_set_default(request):
         messages.warning(request, 'Vui lòng chọn địa chỉ mặc định.')
     
     return redirect('profile' + '?tab=addresses')
+
+
+@require_POST
+def address_set_default_post(request):
+    """
+    Đặt địa chỉ mặc định từ form POST (dùng cho profile page).
+    """
+    if not request.user.is_authenticated:
+        messages.warning(request, 'Vui lòng đăng nhập.')
+        return redirect('login')
+    
+    default_address_id = request.POST.get('default_address')
+    
+    if default_address_id:
+        try:
+            address_id = int(default_address_id)
+            # Bỏ đánh dấu địa chỉ mặc định cũ
+            ShippingAddress.objects.filter(user=request.user, is_default=True).update(is_default=False)
+            # Đặt địa chỉ mới làm mặc định
+            address = get_object_or_404(ShippingAddress, id=address_id, user=request.user)
+            address.is_default = True
+            address.save()
+            messages.success(request, 'Đã cập nhật địa chỉ mặc định.')
+        except (ShippingAddress.DoesNotExist, ValueError):
+            messages.error(request, 'Địa chỉ không hợp lệ.')
+    else:
+        messages.warning(request, 'Vui lòng chọn địa chỉ mặc định.')
+    
+    return HttpResponseRedirect('/profile/?tab=addresses')
 
 
 @require_POST

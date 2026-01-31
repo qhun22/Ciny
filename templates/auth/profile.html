@@ -205,49 +205,67 @@
                             </div>
                         </form>
                         
-                        <!-- Address List -->
-                        <h4 class="font-medium text-gray-700 mt-6 mb-3">Danh sách địa chỉ đã lưu</h4>
+                        <!-- Address List with Radio Buttons -->
                         {% if addresses %}
-                        <form method="POST" action="{% url 'address_delete_bulk' %}">
+                        <form method="POST" action="{% url 'address_set_default' %}" id="addressForm">
                             {% csrf_token %}
+                            
+                            <h4 class="font-medium text-gray-700 mt-6 mb-3">Chọn địa chỉ mặc định</h4>
+                            
                             <div class="space-y-3">
                                 {% for addr in addresses %}
-                                <div class="border border-gray-200 rounded-lg p-4 flex items-center gap-4 {% if addr.is_default %}bg-purple-50 border-purple-500{% endif %}">
-                                    <!-- Checkbox chọn địa chỉ -->
-                                    <input type="checkbox" name="address_ids" value="{{ addr.id }}" 
-                                           class="w-5 h-5 rounded border-gray-300 text-purple-600 cursor-pointer">
-                                    
-                                    <!-- Thông tin địa chỉ -->
-                                    <div class="flex-1">
-                                        <div class="flex items-center gap-2">
+                                <div class="border border-gray-200 rounded-lg p-4 {% if addr.is_default %}border-purple-500 bg-purple-50{% endif %} hover:bg-gray-50 transition-colors cursor-pointer"
+                                     onclick="selectAddress({{ addr.id }})">
+                                    <div class="flex items-center gap-3">
+                                        <input type="radio" name="default_address" value="{{ addr.id }}" 
+                                               {% if addr.is_default %}checked{% endif %}
+                                               id="addr_{{ addr.id }}"
+                                               class="w-5 h-5 text-purple-600 cursor-pointer">
+                                        <div class="flex-1">
                                             <p class="font-medium text-gray-800">{{ addr.full_name }}</p>
-                                            {% if addr.is_default %}
-                                            <span class="px-2 py-0.5 bg-purple-500 text-white text-xs rounded">Mặc định</span>
-                                            {% endif %}
+                                            <p class="text-gray-600 text-sm"><span class="text-pink-500">📞</span> {{ addr.phone }}</p>
+                                            <p class="text-gray-600 text-sm"><span class="text-pink-500">📍</span> {{ addr.address }}</p>
                                         </div>
-                                        <p class="text-gray-600 text-sm"><span class="text-pink-500">📞</span> {{ addr.phone }}</p>
-                                        <p class="text-gray-600 text-sm"><span class="text-pink-500">📍</span> {{ addr.address }}</p>
+                                        {% if addr.is_default %}
+                                        <span class="px-2 py-0.5 bg-purple-500 text-white text-xs rounded">Mặc định</span>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 {% endfor %}
                             </div>
                             
-                            <!-- Nút Xóa và Lưu -->
-                            <div class="mt-4 flex justify-end gap-3">
-                                <button type="submit" name="action" value="delete"
-                                        onclick="return confirm('Xóa các địa chỉ đã chọn?')"
-                                        class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors">
-                                    Xóa
-                                </button>
-                                <button type="submit" name="action" value="default"
-                                        onclick="return confirm('Đặt địa chỉ đã chọn làm mặc định?')"
-                                        class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
-                                    Lưu
-                                </button>
+                            <!-- Buttons -->
+                            <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+                                <div class="flex gap-2">
+                                    <a href="{% url 'address_add' %}" 
+                                       class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">
+                                        Thêm địa chỉ mới
+                                    </a>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="deleteSelectedAddress()"
+                                            class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors">
+                                        Xóa
+                                    </button>
+                                    <button type="submit" form="addressForm"
+                                            class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+                                        Lưu
+                                    </button>
+                                </div>
                             </div>
                         </form>
+                        
+                        <!-- Hidden delete form -->
+                        <form method="POST" action="" id="deleteForm" style="display: none;">
+                            {% csrf_token %}
+                            <input type="hidden" name="address_id" id="deleteAddressId">
+                        </form>
+                        
                         {% else %}
-                        <p class="text-gray-500 text-sm mt-4">Chưa có địa chỉ nào.</p>
+                        <div class="text-center py-8 mt-6">
+                            <div class="text-4xl mb-2">📍</div>
+                            <p class="text-gray-500">Bạn chưa có địa chỉ nào.</p>
+                        </div>
                         {% endif %}
                     </div>
                 </div>
@@ -350,6 +368,25 @@
             }).then(response => {
                 if (response.ok) location.reload();
             });
+        }
+    }
+    
+    // Chọn địa chỉ (click vào card cũng chọn được radio)
+    function selectAddress(addressId) {
+        document.getElementById('addr_' + addressId).checked = true;
+    }
+    
+    // Xóa địa chỉ đã chọn
+    function deleteSelectedAddress() {
+        const selectedRadio = document.querySelector('input[name="default_address"]:checked');
+        if (!selectedRadio) {
+            alert('Vui lòng chọn một địa chỉ để xóa!');
+            return;
+        }
+        if (confirm('Xóa địa chỉ này?')) {
+            document.getElementById('deleteAddressId').value = selectedRadio.value;
+            document.getElementById('deleteForm').action = '/profile/address/delete/' + selectedRadio.value + '/';
+            document.getElementById('deleteForm').submit();
         }
     }
     

@@ -1,0 +1,146 @@
+/* Profile Page Styles - QHUN22 Mobile */
+
+/* ===== Tab Navigation ===== */
+.profile-tab-btn {
+    @apply w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors hover:bg-gray-50 text-gray-600;
+}
+
+.profile-tab-btn.active {
+    @apply bg-blue-600 text-white;
+}
+
+/* ===== Profile Container ===== */
+.profile-container {
+    @apply container mx-auto px-4 py-8;
+}
+
+.profile-max-width {
+    @apply max-w-5xl mx-auto;
+}
+
+/* ===== Forms ===== */
+.profile-input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.profile-input:disabled {
+    @apply border-gray-200 bg-gray-100 text-gray-600 cursor-not-allowed;
+}
+
+.profile-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+/* ===== Address Section ===== */
+.address-card {
+    @apply border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer;
+}
+
+.address-card.active {
+    @apply border-blue-500 bg-blue-50;
+}
+
+.address-icon {
+    @apply text-blue-500;
+}
+
+/* ===== Buttons ===== */
+.btn-primary {
+    @apply px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors;
+}
+
+.btn-danger {
+    @apply px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors;
+}
+
+.btn-secondary {
+    @apply px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors;
+}
+
+/* ===== Verified Badge ===== */
+.verified-badge {
+    @apply ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full;
+}
+
+/* ===== Checkbox/Radio ===== */
+.profile-checkbox {
+    @apply w-5 h-5 rounded border-gray-300 text-blue-600 cursor-pointer;
+}
+
+.profile-radio {
+    @apply w-5 h-5 text-blue-600 cursor-pointer;
+}
+
+/* ===== Default Badge ===== */
+.default-badge {
+    @apply px-2 py-0.5 bg-blue-500 text-white text-xs rounded;
+}
+
+/* ===== Section Headers ===== */
+.section-title {
+    @apply text-lg font-semibold text-gray-800 mb-4;
+}
+
+/* ===== Empty State ===== */
+.empty-state {
+    @apply text-center py-8 text-gray-500;
+}
+
+.empty-state-icon {
+    @apply text-4xl mb-2;
+}
+
+/* ===== Form Actions ===== */
+.form-actions {
+    @apply flex justify-between items-center mt-4 pt-4 border-t border-gray-200;
+}
+
+.form-actions-start {
+    @apply flex gap-2;
+}
+
+.form-actions-end {
+    @apply flex gap-2;
+}
+
+/* ===== Input Group ===== */
+.input-group {
+    @apply grid grid-cols-1 md:grid-cols-3 gap-4;
+}
+
+.input-group-item {
+    @apply mb-4;
+}
+
+/* ===== Address List ===== */
+.address-list {
+    @apply space-y-3 mt-6;
+}
+
+/* ===== Profile Sidebar ===== */
+.profile-sidebar {
+    @apply w-full md:w-1/4;
+}
+
+.profile-sidebar-card {
+    @apply bg-white rounded-lg border border-gray-200 p-4;
+}
+
+.profile-sidebar-title {
+    @apply text-lg font-semibold text-gray-800 mb-4;
+}
+
+/* ===== Profile Content ===== */
+.profile-content {
+    @apply w-full md:w-3/4;
+}
+
+.profile-content-card {
+    @apply bg-white rounded-lg border border-gray-200 p-6 mb-6;
+}
+
+/* ===== Divider ===== */
+.profile-divider {
+    @apply border-gray-200 my-6;
+}
+
