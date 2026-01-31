@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% load static custom_filters %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    {% with first_storage=product.storage_options.first %}
+    
+    <!-- Breadcrumb -->
+    <nav class="text-sm text-gray-500 mb-6">
+        <a href="{% url 'home' %}" class="hover:text-primary">Trang chu</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-800">{{ product.brand }} {{ product.name }}</span>
+    </nav>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Cot trai: Hinh anh -->
+        <div class="space-y-4">
+            <!-- Anh chinh -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <img id="mainImage" 
+                     src="{{ product.main_image.url }}" 
+                     alt="{{ product.brand }} {{ product.name }}"
+                     class="w-full h-96 object-contain">
+            </div>
+            
+            <!-- Gallery anh nho -->
+            {% if product.images.exists %}
+            <div class="flex gap-2 overflow-x-auto pb-2">
+                <button onclick="changeImage('{{ product.main_image.url }}')" 
+                        class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 border-primary">
+                    <img src="{{ product.main_image.url }}" alt="Anh chinh" class="w-full h-full object-cover">
+                </button>
+                
+                {% for img in product.images.all %}
+                <button onclick="changeImage('{{ img.image.url }}')" 
+                        class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-primary transition">
+                    <img src="{{ img.image.url }}" alt="Anh {{ forloop.counter }}" class="w-full h-full object-cover">
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Cot phai: Thong tin san pham -->
+        <div class="space-y-6">
+            <!-- Ten va thuong hieu -->
+            <div>
+                <p class="text-gray-500">{{ product.brand }}</p>
+                <h1 class="text-3xl font-bold text-gray-800">{{ product.name }}</h1>
+            </div>
+            
+            <!-- Danh gia -->
+            <div class="flex items-center gap-2">
+                <div class="flex text-yellow-400">
+                    {% for i in "12345" %}
+                    <span>{% if forloop.counter <= avg_rating %}★{% else %}☆{% endif %}</span>
+                    {% endfor %}
+                </div>
+                <span class="text-gray-600">{{ avg_rating }}/5 ({{ reviews.count }} danh gia)</span>
+            </div>
+            
+            <!-- Gia - Hien thi gia cua storage duoc chon -->
+            <div class="bg-gray-100 rounded-xl p-4">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="text-gray-400 line-through text-lg" id="originalPrice">
+                        {% if first_storage %}{{ first_storage.original_price|format_vnd }}{% else %}{{ product.original_price|format_vnd }}{% endif %}
+                    </span>
+                    <span class="text-red-600 text-3xl font-bold" id="salePrice">
+                        {% if first_storage %}{{ first_storage.sale_price|format_vnd }}{% else %}{{ product.sale_price|format_vnd }}{% endif %}
+                    </span>
+                    <span class="bg-red-500 text-white px-2 py-1 rounded text-sm font-bold" id="discountBadge">
+                        -{{ product.discount_percent }}%
+                    </span>
+                </div>
+                <p class="text-sm text-gray-500">Gia da bao gom khuyen mai {{ product.discount_percent }}%</p>
+            </div>
+            
+            <!-- Badges dac diem -->
+            <div class="flex flex-wrap gap-2">
+                {% if product.free_shipping %}
+                <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">Mien phi giao hang</span>
+                {% endif %}
+                {% if product.open_box_check %}
+                <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">Mo hop kiem tra</span>
+                {% endif %}
+                {% if product.return_30_days %}
+                <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">Doi tra trong 30 ngay</span>
+                {% endif %}
+            </div>
+            
+            <!-- Chon bo nho -->
+            {% if product.storage_options.exists %}
+            <div>
+                <h3 class="font-semibold mb-2">Chon bo nho:</h3>
+                <div class="flex flex-wrap gap-2" id="storageOptions">
+                    {% for storage in product.storage_options.all %}
+                    <button onclick="selectStorage(this, '{{ storage.storage }}', {{ storage.original_price }}, {{ storage.sale_price }})"
+                            class="storage-btn border-2 border-gray-200 rounded-lg px-4 py-2 hover:border-primary transition
+                                   {% if forloop.first %}border-primary bg-blue-50{% endif %}"
+                            data-storage="{{ storage.storage }}"
+                            data-original-price="{{ storage.original_price }}"
+                            data-sale-price="{{ storage.sale_price }}">
+                        <span class="font-medium">{{ storage.storage }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Chon mau sac -->
+            {% if product.color_options.exists %}
+            <div>
+                <h3 class="font-semibold mb-2">Chon mau:</h3>
+                <div class="flex flex-wrap gap-2" id="colorOptions">
+                    {% for color in product.color_options.all %}
+                    <button type="button" 
+                            class="color-btn border-2 border-gray-200 rounded-lg px-4 py-2 hover:border-primary transition
+                                   {% if forloop.first %}border-primary bg-blue-50{% endif %}"
+                            data-color="{{ color.color_name }}"
+                            data-image="{% if color.color_image %}{{ color.color_image.url }}{% else %}{{ product.main_image.url }}{% endif %}"
+                            onclick="selectColor(this)">
+                        <span class="font-medium">{{ color.color_name }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Nut mua hang -->
+            <div class="flex gap-4">
+                <!-- Thêm vào giỏ hàng -->
+                <form action="{% url 'cart_add' product.id %}" method="POST" class="flex-1">
+                    {% csrf_token %}
+                    <input type="hidden" name="storage" id="selectedStorage" value="{{ product.storage_options.first.storage|default:'' }}">
+                    <input type="hidden" name="color" id="selectedColor" value="{{ product.color_options.first.color_name|default:'' }}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" class="w-full bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition">
+                        Them vao gio hang
+                    </button>
+                </form>
+                
+                <!-- Mua ngay -->
+                <form action="{% url 'buy_now' product.id %}" method="POST" class="flex-1">
+                    {% csrf_token %}
+                    <input type="hidden" name="storage" id="buyNowStorage" value="{{ product.storage_options.first.storage|default:'' }}">
+                    <input type="hidden" name="color" id="buyNowColor" value="{{ product.color_options.first.color_name|default:'' }}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" class="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition">
+                        Mua ngay
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Thong tin bao hanh -->
+            <div class="bg-blue-50 rounded-xl p-4">
+                <h3 class="font-semibold mb-2">Thong tin bao hanh</h3>
+                <p class="text-gray-600">Bao hanh chinh hang {{ product.warranty_months }} thang</p>
+                <p class="text-gray-500 text-sm mt-1">Bao xai loi 1 doi 1 trong 30 ngay dau tien</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mo ta san pham -->
+    <div class="mt-12">
+        <h2 class="text-2xl font-bold mb-4">Mo ta san pham</h2>
+        <div class="bg-white rounded-xl shadow-md p-6">
+            {% if product.description %}
+            <p class="whitespace-pre-line text-gray-600">{{ product.description }}</p>
+            {% else %}
+            <p class="text-gray-400 italic">Chua co mo ta cho san pham nay.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Thong so ky thuat -->
+    <div class="mt-8">
+        <h2 class="text-2xl font-bold mb-4">Thong so ky thuat</h2>
+        <div class="bg-white rounded-xl shadow-md p-6">
+            {% if product.specifications %}
+            <pre class="whitespace-pre-line text-gray-600 font-sans">{{ product.specifications }}</pre>
+            {% else %}
+            <p class="text-gray-400 italic">Chua co thong so ky thuat cho san pham nay.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Danh gia san pham -->
+    <div class="mt-8">
+        <h2 class="text-2xl font-bold mb-4">Danh gia san pham</h2>
+        
+        {% if reviews %}
+        <div class="space-y-4 mb-6">
+            {% for review in reviews %}
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span class="text-lg font-medium text-gray-600">
+                            {{ review.user.username|upper|make_list|first }}
+                        </span>
+                    </div>
+                    <div class="flex-grow">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-semibold">{{ review.user.username }}</span>
+                            <span class="text-yellow-400">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                        <p class="text-gray-600">{{ review.comment }}</p>
+                        <p class="text-gray-400 text-sm mt-2">{{ review.created_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white rounded-xl shadow-md p-6 text-center">
+            <p class="text-gray-500">Chua co danh gia nao.</p>
+        </div>
+        {% endif %}
+        
+        {% if review_form %}
+        <div class="bg-white rounded-xl shadow-md p-6 mt-6">
+            <h3 class="font-semibold mb-4">Them danh gia cua ban</h3>
+            <form method="POST" action="{% url 'add_review' product.id %}">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Danh gia:</label>
+                    <div class="flex gap-2">
+                        {% for i in "12345" %}
+                        <input type="radio" name="rating" value="{{ forloop.counter }}" id="rating{{ forloop.counter }}"
+                               class="w-6 h-6 text-yellow-500" {% if forloop.counter == 5 %}checked{% endif %}>
+                        <label for="rating{{ forloop.counter }}" class="text-yellow-400 text-2xl cursor-pointer">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Nhan xet:</label>
+                    <textarea name="comment" rows="4" required
+                              placeholder="Chia se truong hop cua ban..."
+                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"></textarea>
+                </div>
+                <button type="submit" 
+                        class="bg-primary text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition">
+                    Gui danh gia
+                </button>
+            </form>
+        </div>
+        {% elif not request.user.is_authenticated %}
+        <div class="bg-white rounded-xl shadow-md p-6 text-center">
+            <p class="text-gray-500">
+                <a href="{% url 'login' %}" class="text-primary hover:underline">Dang nhap</a> de danh gia san pham
+            </p>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% endwith %}
+</div>
+
+<!-- JavaScript cho gia dynamic -->
+<script>
+    let currentStorage = '';
+    
+    function changeImage(imageUrl) {
+        const mainImage = document.getElementById('mainImage');
+        if (mainImage && imageUrl) {
+            mainImage.src = imageUrl;
+        }
+    }
+    
+    function selectStorage(button, storage, originalPrice, salePrice) {
+        // Cap nhat UI
+        const buttons = document.querySelectorAll('.storage-btn');
+        buttons.forEach(btn => {
+            btn.classList.remove('border-primary', 'bg-blue-50');
+            btn.classList.add('border-gray-200');
+        });
+        button.classList.remove('border-gray-200');
+        button.classList.add('border-primary', 'bg-blue-50');
+        
+        // Cap nhat gia
+        currentStorage = storage;
+        
+        document.getElementById('originalPrice').textContent = parseInt(originalPrice).toLocaleString('vi-VN') + ' VND';
+        document.getElementById('salePrice').textContent = parseInt(salePrice).toLocaleString('vi-VN') + ' VND';
+        
+        // Cap nhat hidden inputs cho Add to Cart
+        const selectedStorageInput = document.getElementById('selectedStorage');
+        if (selectedStorageInput) selectedStorageInput.value = storage;
+        
+        // Cap nhat hidden inputs cho Buy Now
+        const buyNowStorageInput = document.getElementById('buyNowStorage');
+        if (buyNowStorageInput) buyNowStorageInput.value = storage;
+    }
+    
+    function selectColor(button) {
+        // Lay image tu data attribute
+        const imageUrl = button.getAttribute('data-image');
+        const colorName = button.getAttribute('data-color');
+        
+        // Cap nhat UI
+        const buttons = document.querySelectorAll('.color-btn');
+        buttons.forEach(btn => {
+            btn.classList.remove('border-primary', 'bg-blue-50');
+            btn.classList.add('border-gray-200');
+        });
+        button.classList.remove('border-gray-200');
+        button.classList.add('border-primary', 'bg-blue-50');
+        
+        // Doi anh chinh
+        if (imageUrl) {
+            changeImage(imageUrl);
+        }
+        
+        // Cap nhat hidden inputs cho Add to Cart
+        const selectedColorInput = document.getElementById('selectedColor');
+        if (selectedColorInput) selectedColorInput.value = colorName;
+        
+        // Cap nhat hidden inputs cho Buy Now
+        const buyNowColorInput = document.getElementById('buyNowColor');
+        if (buyNowColorInput) buyNowColorInput.value = colorName;
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    function initGallery() {
+        const thumbnails = document.querySelectorAll('[onclick*="changeImage"]');
+        thumbnails.forEach(function(thumb) {
+            thumb.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const onclickAttr = this.getAttribute('onclick');
+                const match = onclickAttr.match(/changeImage\(['"]([^'"]+)['"]\)/);
+                if (match && match[1]) {
+                    changeImage(match[1]);
+                }
+                
+                thumbnails.forEach(function(t) {
+                    t.classList.remove('border-primary');
+                    t.classList.add('border-gray-200');
+                });
+                this.classList.remove('border-gray-200');
+                this.classList.add('border-primary');
+            });
+        });
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        initGallery();
+    });
+</script>
+{% endblock %}

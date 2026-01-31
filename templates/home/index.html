@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<!-- ==================== BANNER CHÍNH (Slider) ==================== -->
+<section class="max-w-7xl mx-auto px-4 py-6">
+    <div class="relative rounded-2xl overflow-hidden shadow-xl">
+        <!-- Slider Container -->
+        <div class="relative h-[400px] bg-gray-900" id="mainSlider">
+            <!-- Slide 1 - IPHONE -->
+            <div class="banner-slide absolute inset-0 opacity-100 transition-opacity duration-700 ease-in-out" data-slide="0">
+                <video id="video-iphone" class="w-full h-full object-cover transition-transform duration-700" autoplay muted loop playsinline preload="auto">
+                    <source src="{% static 'videos/applv1.mp4' %}" type="video/mp4">
+                </video>
+                <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-center">
+                    <div class="pl-16">
+                        <h2 class="text-4xl font-bold text-white mb-2">IPHONE</h2>
+                        <p class="text-gray-200 text-lg mb-4">Trải nghiệm công nghệ vượt trội</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Slide 2 - SAMSUNG -->
+            <div class="banner-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out" data-slide="1">
+                <video id="video-samsung" class="w-full h-full object-cover transition-transform duration-700" autoplay muted loop playsinline preload="auto">
+                    <source src="{% static 'videos/sams.mp4' %}" type="video/mp4">
+                </video>
+                <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-center">
+                    <div class="pl-16">
+                        <h2 class="text-4xl font-bold text-white mb-2">SAMSUNG</h2>
+                        <p class="text-gray-200 text-lg mb-4">Camera siêu zoom 100x</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Slide 3 - XIAOMI -->
+            <div class="banner-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out" data-slide="2">
+                <video id="video-xiaomi" class="w-full h-full object-cover transition-transform duration-700" autoplay muted loop playsinline preload="auto">
+                    <source src="{% static 'videos/xiao.mp4' %}" type="video/mp4">
+                </video>
+                <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-center">
+                    <div class="pl-16">
+                        <h2 class="text-4xl font-bold text-white mb-2">XIAOMI</h2>
+                        <p class="text-gray-200 text-lg mb-4">Snapdragon 8 Elite – Hiệu năng vượt xa</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Slide 4 - OPPO -->
+            <div class="banner-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out" data-slide="3">
+                <video id="video-oppo" class="w-full h-full object-cover transition-transform duration-700" autoplay muted loop playsinline preload="auto">
+                    <source src="{% static 'videos/ooppv1.mp4' %}" type="video/mp4">
+                </video>
+                <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-center">
+                    <div class="pl-16">
+                        <h2 class="text-4xl font-bold text-white mb-2">OPPO</h2>
+                        <p class="text-gray-200 text-lg mb-4">Hệ thống camera Hasselblad</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Nút chuyển trái -->
+        <button id="prevBtn" class="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/90 hover:bg-white text-gray-700 text-lg rounded-full flex items-center justify-center shadow-md transition hover:scale-105 z-10 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <!-- Nút chuyển phải -->
+        <button id="nextBtn" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/90 hover:bg-white text-gray-700 text-lg rounded-full flex items-center justify-center shadow-md transition hover:scale-105 z-10 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </button>
+        <!-- Indicator (Dots) -->
+        <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2" id="dotsContainer">
+            <button class="w-3 h-3 rounded-full bg-white/90 hover:bg-white transition-all duration-300 dot-btn active" data-slide="0"></button>
+            <button class="w-3 h-3 rounded-full bg-white/40 hover:bg-white transition-all duration-300 dot-btn" data-slide="1"></button>
+            <button class="w-3 h-3 rounded-full bg-white/40 hover:bg-white transition-all duration-300 dot-btn" data-slide="2"></button>
+            <button class="w-3 h-3 rounded-full bg-white/40 hover:bg-white transition-all duration-300 dot-btn" data-slide="3"></button>
+        </div>
+    </div>
+</section>
+
+<!-- Slider JavaScript -->
+<script src="{% static 'js/home.js' %}"></script>
+
+<!-- Danh sach san pham -->
+<section class="max-w-7xl mx-auto px-4 pb-8">
+    <div class="auto-slider-container rounded-2xl shadow-lg overflow-hidden relative">
+        <div class="auto-slider-track flex transition-transform duration-500 ease-in-out" id="autoSliderTrack">
+            <!-- Banner 1 -->
+            <div class="auto-slider-item flex-shrink-0 w-1/2">
+                <a href="#" class="block">
+                    <img src="{% static 'banners/78253.webp' %}" alt="Banner 1" class="w-full h-[200px] object-cover">
+                </a>
+            </div>
+            <!-- Banner 2 -->
+            <div class="auto-slider-item flex-shrink-0 w-1/2">
+                <a href="#" class="block">
+                    <img src="{% static 'banners/872375.png' %}" alt="Banner 2" class="w-full h-[200px] object-cover">
+                </a>
+            </div>
+            <!-- Banner 3 -->
+            <div class="auto-slider-item flex-shrink-0 w-1/2">
+                <a href="#" class="block">
+                    <img src="{% static 'banners/42321.jpg' %}" alt="Banner 3" class="w-full h-[200px] object-cover">
+                </a>
+            </div>
+            <!-- Banner 4 -->
+            <div class="auto-slider-item flex-shrink-0 w-1/2">
+                <a href="#" class="block">
+                    <img src="{% static 'banners/572723.png' %}" alt="Banner 4" class="w-full h-[200px] object-cover">
+                </a>
+            </div>
+            <!-- Clone Banner 1 và 2 để loop mượt -->
+            <div class="auto-slider-item flex-shrink-0 w-1/2">
+                <a href="#" class="block">
+                    <img src="{% static 'banners/78253.webp' %}" alt="Banner 1 Clone" class="w-full h-[200px] object-cover">
+                </a>
+            </div>
+            <div class="auto-slider-item flex-shrink-0 w-1/2">
+                <a href="#" class="block">
+                    <img src="{% static 'banners/872375.png' %}" alt="Banner 2 Clone" class="w-full h-[200px] object-cover">
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== DANH MỤC ĐIỆN THOẠI ==================== -->
+<section class="max-w-7xl mx-auto px-4 pb-4">
+    <!-- Tiêu đề -->
+    <div class="flex items-center justify-center gap-4 mb-4">
+        <div class="flex-1 h-px bg-gradient-to-l from-primary to-transparent max-w-[100px]"></div>
+        <div class="flex items-center gap-3">
+            <h2 class="text-xl font-bold text-dark whitespace-nowrap">DANH MỤC ĐIỆN THOẠI</h2>
+        </div>
+        <div class="flex-1 h-px bg-gradient-to-r from-primary to-transparent max-w-[100px]"></div>
+    </div>
+    <!-- Danh sách 1 hàng, 10 hãng đầu tiên -->
+    <div class="brand-scroll-container">
+        <div class="brand-row">
+            <!-- 1. iPhone (Apple) -->
+            <a href="?brand=Apple" class="brand-card">
+                <div class="brand-card-inner">
+                    <div class="brand-logo">
+                        <img src="{% static 'icons/logo_iphone_ngang_eac93ff477.webp' %}" alt="iPhone">
+                    </div>
+                </div>
+            </a>
+            <!-- 2. Samsung -->
+            <a href="?brand=Samsung" class="brand-card">
+                <div class="brand-card-inner">
+                    <div class="brand-logo">
+                        <img src="{% static 'icons/logo_samsung_ngang_1624d75bd8.webp' %}" alt="Samsung">
+                    </div>
+                </div>
+            </a>
+            <!-- 3. Xiaomi -->
+            <a href="?brand=Xiaomi" class="brand-card">
+                <div class="brand-card-inner">
+                    <div class="brand-logo">
+                        <img src="{% static 'icons/logo_xiaomi_ngang_0faf267234.webp' %}" alt="Xiaomi">
+                    </div>
+                </div>
+            </a>
+            <!-- 4. Oppo -->
+            <a href="?brand=OPPO" class="brand-card">
+                <div class="brand-card-inner">
+                    <div class="brand-logo">
+                        <img src="{% static 'icons/logo_oppo_ngang_68d31fcd73.webp' %}" alt="OPPO">
+                    </div>
+                </div>
+            </a>
+            <!-- 5. Vivo -->
+            <a href="?brand=vivo" class="brand-card">
+                <div class="brand-card-inner">
+                    <div class="brand-logo">
+                        <img src="{% static 'icons/logo_vivo_ngang_45494ff733.webp' %}" alt="Vivo">
+                    </div>
+                </div>
+            </a>
+            <!-- 6. Realme -->
+            <a href="?brand=realme" class="brand-card">
+                <div class="brand-card-inner">
+                    <div class="brand-logo">
+                        <img src="{% static 'icons/logo_realme_ngang_0185815a13.webp' %}" alt="Realme">
+                    </div>
+                </div>
+            </a>
+            <!-- 7. Honor -->
+            <a href="?brand=Honor" class="brand-card">
+                <div class="brand-card-inner">
+                    <div class="brand-logo">
+                        <img src="{% static 'icons/logo_honor_ngang_814fca59e4.webp' %}" alt="Honor">
+                    </div>
+                </div>
+            </a>
+            <!-- 8. Redmagic -->
+            <a href="?brand=RedMagic" class="brand-card">
+                <div class="brand-card-inner">
+                    <div class="brand-logo">
+                        <img src="{% static 'icons/logo_redmagic_ngang_505d29c537.webp' %}" alt="Redmagic">
+                    </div>
+                </div>
+            </a>
+            <!-- 9. Tecno -->
+            <a href="?brand=Tecno" class="brand-card">
+                <div class="brand-card-inner">
+                    <div class="brand-logo">
+                        <img src="{% static 'icons/logo_tecno_ngang_c587e5f1fa.webp' %}" alt="Tecno">
+                    </div>
+                </div>
+            </a>
+            <!-- 10. Benco -->
+            <a href="?brand=Benco" class="brand-card">
+                <div class="brand-card-inner">
+                    <div class="brand-logo">
+                        <img src="{% static 'icons/logo_benco_ngang_d31d9c3b77.webp' %}" alt="Benco">
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== KHUYẾN MÃI ĐẶC BIỆT ==================== -->
+{% if show_promotion and special_promotions %}
+<section class="max-w-7xl mx-auto px-4 pb-4">
+    <div class="promo-section rounded-xl overflow-hidden">
+        <!-- Banner khuyến mãi -->
+        <div class="promo-banner">
+            <img src="{% static 'banners/bnv.png' %}" alt="Khuyến mãi đặc biệt">
+        </div>
+        <!-- Danh sách sản phẩm khuyến mãi (Max 5 sản phẩm) -->
+        <div class="promo-products">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 p-4">
+                {% for promo in special_promotions %}
+                <a href="{% url 'product_detail' promo.product.id %}" class="promo-product-card cursor-pointer block no-underline">
+                    <div class="aspect-[3/4] relative overflow-hidden bg-white">
+                        {% if promo.product.main_image %}
+                        <img src="{{ promo.product.main_image.url }}" alt="{{ promo.product.name }}"
+                            class="w-full h-full object-contain"
+                            onerror="this.src='https://placehold.co/300x400?text=No+Image'">
+                        {% else %}
+                        <img src="https://placehold.co/300x400?text={{ promo.product.name|urlencode }}"
+                            class="w-full h-full object-contain">
+                        {% endif %}
+                        <div class="discount-badge">GIẢM {{ promo.discount_percent }}%</div>
+                    </div>
+                    <div class="p-3 bg-white">
+                        <h3 class="promo-product-name group-hover:text-primary transition-colors line-clamp-2">
+                            {{ promo.product.name }}
+                        </h3>
+                        <div class="promo-price-block">
+                            <span class="promo-current-price"><span class="price-format">{{ promo.discounted_price|format_vnd }}</span>₫</span>
+                            <span class="promo-original-price"><span class="price-format">{{ promo.product.original_price|format_vnd }}</span>₫</span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Danh sach san pham -->
+<section id="products" class="py-12">
+    <div class="container mx-auto px-4">
+        <!-- Tiêu đề với hiệu ứng -->
+        <div class="flex items-center justify-center gap-4 mb-8">
+            <div class="flex-1 h-px bg-gradient-to-l from-primary to-transparent max-w-[100px]"></div>
+            <h2 class="text-xl font-bold text-dark whitespace-nowrap">SẢN PHẨM NỔI BẬT</h2>
+            <div class="flex-1 h-px bg-gradient-to-r from-primary to-transparent max-w-[100px]"></div>
+        </div>
+        
+        {% if products %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {% for product in products %}
+            <a href="{% url 'product_detail' product.id %}" class="group">
+                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition duration-300">
+                    <!-- Hinh anh san pham -->
+                    <div class="relative">
+                        <img src="{{ product.main_image.url }}" 
+                             alt="{{ product.name }}"
+                             class="w-full h-64 object-cover object-center group-hover:scale-105 transition duration-300">
+                        
+                        <!-- Badge giam gia -->
+                        {% if product.discount_percent > 0 %}
+                        <span class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-lg text-sm font-bold">
+                            -{{ product.discount_percent }}%
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Thong tin san pham -->
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2 group-hover:text-primary transition">
+                            {{ product.name }}
+                        </h3>
+                        
+                        <div class="flex items-center gap-2 mb-3">
+                            <!-- Gia goc (gach ngang) -->
+                            {% if product.discount_percent > 0 %}
+                            <span class="text-gray-400 line-through text-sm">
+                                {{ product.original_price|format_vnd }}
+                            </span>
+                            {% endif %}
+                            
+                            <!-- Gia khuyen mai -->
+                            <span class="text-red-600 font-bold text-xl">
+                                {{ product.sale_price|format_vnd }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        
+        {% else %}
+        <div class="text-center py-12">
+            <p class="text-gray-500 text-lg">Chua co san pham nao.</p>
+            <p class="text-gray-400">Vui long quay lai sau.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Tai sao chon chung toi -->
+<section class="bg-gray-100 py-12">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-8">Tai sao chon PhoneShop?</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="text-center">
+                <div class="text-4xl mb-4">OK</div>
+                <h3 class="text-xl font-semibold mb-2">Hang chinh hang</h3>
+                <p class="text-gray-600">Cam ket 100% san pham chinh hang, day du bill.</p>
+            </div>
+            
+            <div class="text-center">
+                <div class="text-4xl mb-4">Giao hang</div>
+                <h3 class="text-xl font-semibold mb-2">Giao hang nhanh</h3>
+                <p class="text-gray-600">Giao hang tan noi trong 1-2 ngay lam viec.</p>
+            </div>
+            
+            <div class="text-center">
+                <div class="text-4xl mb-4">Bao hanh</div>
+                <h3 class="text-xl font-semibold mb-2">Bao hanh uy tin</h3>
+                <p class="text-gray-600">Bao hanh chinh hang tu 12-24 thang.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

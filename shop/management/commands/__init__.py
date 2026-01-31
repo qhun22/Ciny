@@ -1,0 +1,3 @@
+# Shop management commands init
+
+

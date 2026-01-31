@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ page_title }}{% endblock %}</title>
+    
+    <!-- TailwindCSS từ CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Cấu hình TailwindCSS tùy chỉnh -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#64748b',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Static files -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    
+{% load static %}
+
+<!-- Header chính - Sticky top -->
+<header class="sticky top-0 z-50 bg-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="flex items-center h-16">
+
+            <!-- Logo -->
+            <a href="/" class="flex-shrink-0">
+                <img src="{% static 'logos/ciny22.gif' %}"
+                     alt="QHUN22 Mobile"
+                     class="h-10 w-auto">
+            </a>
+
+            <!-- Search Box -->
+            <div class="flex-1 max-w-xl mx-6 lg:mx-10">
+                <form action="/products/search/" method="GET" class="relative">
+                    <input type="text"
+                           name="q"
+                           placeholder="Tìm iPhone, Samsung, Oppo..."
+                           class="w-full h-11 pl-4 pr-11 bg-gray-100 border-0 rounded-lg
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500
+                                  transition-all duration-300">
+                    <button type="submit"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5
+                                   text-gray-400 hover:text-blue-500 hover:bg-gray-200
+                                   rounded-md transition-all duration-300 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Icons: Cart + Order Lookup + Account -->
+            <div class="flex items-center gap-6 lg:gap-10">
+
+                <!-- GIỎ HÀNG -->
+                <a href="{% url 'cart_detail' %}"
+                   class="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors group">
+                    <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-blue-50 transition-all duration-300 relative">
+                        <svg class="w-5 h-5 text-gray-500 group-hover:text-blue-600 transition-colors"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">{% if cart %}{{ cart.total_items }}{% else %}0{% endif %}</span>
+                    </div>
+                    <div class="flex flex-col min-w-[80px]">
+                        <span class="text-xs text-gray-400">Giỏ hàng</span>
+                        <span class="text-sm font-medium group-hover:text-blue-600 transition-colors whitespace-nowrap">Thanh toán</span>
+                    </div>
+                </a>
+
+                <!-- TRA CỨU ĐƠN -->
+                <a href="{% url 'order_tracking' %}"
+                   class="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors group">
+                    <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-blue-50 transition-all duration-300">
+                        <svg class="w-5 h-5 text-gray-500 group-hover:text-blue-600 transition-colors"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                    </div>
+                    <div class="flex flex-col min-w-[90px]">
+                        <span class="text-xs text-gray-400">Kiểm tra</span>
+                        <span class="text-sm font-medium group-hover:text-blue-600 transition-colors whitespace-nowrap">Tra cứu đơn</span>
+                    </div>
+                </a>
+
+                <!-- TÀI KHOẢN / ĐĂNG NHẬP -->
+                {% if user.is_authenticated %}
+                    <!-- Đã đăng nhập: hiển thị tên user, link đến profile -->
+                    <a href="{% url 'profile' %}"
+                       class="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors group cursor-pointer">
+                        <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-blue-50 transition-all duration-300 relative">
+                            <svg class="w-5 h-5 text-gray-500 group-hover:text-blue-600 transition-colors"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <div class="flex flex-col min-w-[70px]">
+                            <span class="text-xs text-gray-400">Xin chào</span>
+                            <span class="text-sm font-medium group-hover:text-blue-600 transition-colors whitespace-nowrap">
+                                {% if user.get_full_name %}
+                                    {{ user.get_full_name }}
+                                {% else %}
+                                    {{ user.username }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </a>
+                {% else %}
+                    <!-- Chưa đăng nhập: link đến trang đăng nhập -->
+                    <a href="{% url 'login' %}"
+                       class="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors group">
+                        <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-blue-50 transition-all duration-300">
+                            <svg class="w-5 h-5 text-gray-500 group-hover:text-blue-600 transition-colors"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <div class="flex flex-col min-w-[70px]">
+                            <span class="text-xs text-gray-400">Xin chào</span>
+                            <span class="text-sm font-medium group-hover:text-blue-600 transition-colors whitespace-nowrap">Đăng nhập</span>
+                        </div>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</header>
+    
+    <!-- Main content -->
+    <main class="flex-grow">
+        {% block content %}
+        <!-- Nội dung chính của trang sẽ được thay thế ở đây -->
+        {% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Thông tin cửa hàng -->
+                <div>
+                    <h3 class="text-xl font-bold mb-4">PhoneShop</h3>
+                    <p class="text-gray-400">
+                        Cửa hàng điện thoại uy tín hàng đầu Việt Nam.
+                        <br>Cam kết chất lượng và dịch vụ tốt nhất.
+                    </p>
+                </div>
+                
+                <!-- Liên kết nhanh -->
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Liên kết nhanh</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Về chúng tôi</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Chính sách bảo hành</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Chính sách đổi trả</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Hướng dẫn mua hàng</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Liên hệ -->
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Liên hệ</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li>📍 Địa chỉ: 123 Đường ABC, Quận XYZ, TP.HCM</li>
+                        <li>📞 Điện thoại: 0123 456 789</li>
+                        <li>📧 Email: contact@phoneshop.com</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Copyright -->
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 PhoneShop. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script src="{% static 'js/scripts.js' %}"></script>
+    
+    <!-- Hiển thị messages -->
+    {% if messages %}
+    <div class="fixed bottom-4 right-4 z-50 space-y-2">
+        {% for message in messages %}
+        <div class="px-6 py-3 rounded-lg shadow-lg {% if message.tags == 'success' %}bg-green-500 text-white{% elif message.tags == 'error' %}bg-red-500 text-white{% elif message.tags == 'warning' %}bg-yellow-500 text-black{% else %}bg-blue-500 text-white{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+</body>
+</html>
+

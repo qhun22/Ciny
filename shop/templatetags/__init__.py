@@ -1,0 +1,3 @@
+# Shop templatetags init file
+
+

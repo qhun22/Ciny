@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+
+{% block title %}Hồ sơ - QHUN22 Mobile{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Left Sidebar -->
+            <div class="w-full md:w-1/4">
+                <div class="bg-white rounded-lg border border-gray-200 p-4">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Tài khoản</h2>
+                    
+                    <!-- Tổng quan tab -->
+                    <button onclick="showTab('overview')" id="btn-overview"
+                            class="w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors
+                                   {% if active_tab != 'addresses' %}bg-blue-600 text-white{% else %}hover:bg-gray-50 text-gray-600{% endif %}">
+                        Tổng quan
+                    </button>
+                    
+                    <!-- Sổ địa chỉ tab -->
+                    <button onclick="showTab('addresses')" id="btn-addresses"
+                            class="w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors
+                                   {% if active_tab == 'addresses' %}bg-blue-600 text-white{% else %}hover:bg-gray-50 text-gray-600{% endif %}">
+                        Sổ địa chỉ
+                    </button>
+                    
+                    <!-- Voucher tab -->
+                    <button onclick="showTab('vouchers')" id="btn-vouchers"
+                            class="w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors
+                                   {% if active_tab == 'vouchers' %}bg-blue-600 text-white{% else %}hover:bg-gray-50 text-gray-600{% endif %}">
+                        Voucher
+                    </button>
+                    
+                    {% if is_admin %}
+                    <a href="{% url 'admin_dashboard' %}" 
+                       class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600 mb-2 block">
+                        Quản trị
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'logout' %}" 
+                       class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-lg font-medium text-gray-600 block">
+                        Đăng xuất
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Content -->
+            <div class="w-full md:w-3/4">
+                
+                <!-- Tab: Tổng quan (Personal Info) -->
+                <div id="tab-overview" class="{% if active_tab == 'addresses' %}hidden{% endif %}">
+                    <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Thông tin cá nhân</h3>
+                        
+                        <form method="POST" action="{% url 'profile' %}">
+                            {% csrf_token %}
+                            
+                            <div class="grid grid-cols-1 gap-4 mb-4">
+                                <!-- Họ và Tên -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Họ và tên
+                                        <span class="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Đã xác thực</span>
+                                    </label>
+                                    <input type="hidden" name="full_name" value="{{ user.first_name }}">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               value="{{ user.first_name }}"
+                                               disabled
+                                               class="w-full px-3 py-2 border border-gray-200 bg-gray-100 rounded-lg text-gray-600 cursor-not-allowed">
+                                        <svg class="w-5 h-5 text-green-500 absolute right-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Họ và tên đã được xác thực và khóa.</p>
+                                </div>
+                                
+                            <!-- Số điện thoại -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Số điện thoại
+                                    {% if is_phone_verified %}
+                                    <span class="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Đã xác thực</span>
+                                    {% endif %}
+                                </label>
+                                {% if is_phone_verified %}
+                                <input type="hidden" name="phone_number" value="{{ phone_number }}">
+                                <div class="relative">
+                                    <input type="text" 
+                                           value="{{ phone_number }}"
+                                           disabled
+                                           class="w-full px-3 py-2 border border-gray-200 bg-gray-100 rounded-lg text-gray-600 cursor-not-allowed">
+                                    <svg class="w-5 h-5 text-green-500 absolute right-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Số điện thoại đã được xác thực và khóa.</p>
+                                {% else %}
+                                <input type="text" 
+                                       name="phone_number"
+                                       value="{% if phone_number %}{{ phone_number }}{% endif %}"
+                                       placeholder="Nhập số điện thoại"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                {% endif %}
+                            </div>
+                                
+                                <!-- Email -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Email
+                                        <span class="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Đã xác thực</span>
+                                    </label>
+                                    <div class="relative">
+                                        <input type="email" 
+                                               value="{{ user.email }}"
+                                               disabled
+                                               class="w-full px-3 py-2 border border-gray-200 bg-gray-100 rounded-lg text-gray-600 cursor-not-allowed">
+                                        <svg class="w-5 h-5 text-green-500 absolute right-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Email đã được xác thực và khóa.</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Divider -->
+                            <hr class="border-gray-200 my-6">
+                            
+                            <!-- Password Change -->
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Đổi mật khẩu</h3>
+                            
+                            <div class="grid grid-cols-1 gap-4 mb-4">
+                                <!-- Mật khẩu hiện tại -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu hiện tại</label>
+                                    <input type="password" 
+                                           name="old_password"
+                                           placeholder="Nhập mật khẩu hiện tại"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                
+                                <!-- Mật khẩu mới -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu mới</label>
+                                    <input type="password" 
+                                           name="new_password1"
+                                           placeholder="Nhập mật khẩu mới"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                
+                                <!-- Nhập lại mật khẩu mới -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nhập lại mật khẩu mới</label>
+                                    <input type="password" 
+                                           name="new_password2"
+                                           placeholder="Nhập lại mật khẩu mới"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <div class="mt-6">
+                                <button type="submit" 
+                                        class="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                                    Lưu
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tab: Sổ địa chỉ (Addresses) -->
+                <div id="tab-addresses" class="{% if active_tab != 'addresses' %}hidden{% endif %}">
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Địa chỉ của bạn</h3>
+                        
+                        <!-- Add Address Form -->
+                        <form method="POST" action="{% url 'address_add' %}">
+                            {% csrf_token %}
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nhập họ tên</label>
+                                    <input type="text" name="full_name" required
+                                           placeholder="Nguyễn Văn A"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                                    <input type="text" name="phone" required
+                                           placeholder="0123 456 789"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ chi tiết</label>
+                                    <input type="text" name="address" required
+                                           placeholder="Số nhà, đường, phường/xã"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center gap-2">
+                                <input type="checkbox" name="is_default" id="is_default"
+                                       class="w-4 h-4 rounded border-gray-300 text-purple-600">
+                                <label for="is_default" class="text-sm text-gray-700">Đặt làm địa chỉ mặc định</label>
+                            </div>
+                        </form>
+                        
+                        <!-- Address List -->
+                        <h4 class="font-medium text-gray-700 mt-6 mb-3">Danh sách địa chỉ đã lưu</h4>
+                        {% if addresses %}
+                        <form method="POST" action="{% url 'address_delete_bulk' %}">
+                            {% csrf_token %}
+                            <div class="space-y-3">
+                                {% for addr in addresses %}
+                                <div class="border border-gray-200 rounded-lg p-4 flex items-center gap-4 {% if addr.is_default %}bg-purple-50 border-purple-500{% endif %}">
+                                    <!-- Checkbox chọn địa chỉ -->
+                                    <input type="checkbox" name="address_ids" value="{{ addr.id }}" 
+                                           class="w-5 h-5 rounded border-gray-300 text-purple-600 cursor-pointer">
+                                    
+                                    <!-- Thông tin địa chỉ -->
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <p class="font-medium text-gray-800">{{ addr.full_name }}</p>
+                                            {% if addr.is_default %}
+                                            <span class="px-2 py-0.5 bg-purple-500 text-white text-xs rounded">Mặc định</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-gray-600 text-sm"><span class="text-pink-500">📞</span> {{ addr.phone }}</p>
+                                        <p class="text-gray-600 text-sm"><span class="text-pink-500">📍</span> {{ addr.address }}</p>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Nút Xóa và Lưu -->
+                            <div class="mt-4 flex justify-end gap-3">
+                                <button type="submit" name="action" value="delete"
+                                        onclick="return confirm('Xóa các địa chỉ đã chọn?')"
+                                        class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors">
+                                    Xóa
+                                </button>
+                                <button type="submit" name="action" value="default"
+                                        onclick="return confirm('Đặt địa chỉ đã chọn làm mặc định?')"
+                                        class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+                                    Lưu
+                                </button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <p class="text-gray-500 text-sm mt-4">Chưa có địa chỉ nào.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Tab: Voucher -->
+                <div id="tab-vouchers" class="{% if active_tab != 'vouchers' %}hidden{% endif %}">
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Voucher của bạn</h3>
+                        
+                        <!-- Form xóa voucher đã chọn -->
+                        <form method="POST" action="{% url 'voucher_delete' %}" id="voucherDeleteForm">
+                            {% csrf_token %}
+                            
+                            {% if vouchers %}
+                            <div class="grid grid-cols-1 gap-4 mb-4">
+                                {% for v in vouchers %}
+                                <div class="border border-gray-200 rounded-lg p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                                    <input type="checkbox" name="voucher_ids" value="{{ v.id }}" 
+                                           class="w-5 h-5 rounded border-gray-300 text-blue-600 cursor-pointer">
+                                    <div class="flex-1">
+                                        <p class="font-semibold text-gray-800">{{ v.coupon.code }}</p>
+                                        <p class="text-sm text-gray-600">{{ v.coupon.description|default:"Giảm giá" }}</p>
+                                        <p class="text-xs text-gray-500 mt-1">
+                                            HSD: {{ v.coupon.expires_at|date:"d/m/Y" }}
+                                        </p>
+                                    </div>
+                                    <div class="text-right">
+                                        {% if v.coupon.discount_type == 'percent' %}
+                                        <span class="text-lg font-bold text-red-500">{{ v.coupon.discount_value }}% OFF</span>
+                                        {% else %}
+                                        <span class="text-lg font-bold text-red-500">{{ v.coupon.discount_value|floatformat:0 }}đ OFF</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Nút xóa voucher đã chọn -->
+                            <div class="flex justify-end mt-4">
+                                <button type="submit" 
+                                        onclick="return confirm('Xóa các voucher đã chọn?')"
+                                        class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors">
+                                    Xóa voucher đã chọn
+                                </button>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-8">
+                                <div class="text-4xl mb-2">🎁</div>
+                                <p class="text-gray-500">Bạn chưa có voucher nào.</p>
+                                <p class="text-sm text-gray-400 mt-1">Hãy theo dõi các chương trình khuyến mãi để nhận voucher nhé!</p>
+                            </div>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+    function showTab(tab) {
+        // Hide all tabs
+        document.getElementById('tab-overview').classList.add('hidden');
+        document.getElementById('tab-addresses').classList.add('hidden');
+        document.getElementById('tab-vouchers').classList.add('hidden');
+        
+        // Reset button styles
+        document.getElementById('btn-overview').className = 'w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors hover:bg-gray-50 text-gray-600';
+        document.getElementById('btn-addresses').className = 'w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors hover:bg-gray-50 text-gray-600';
+        document.getElementById('btn-vouchers').className = 'w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors hover:bg-gray-50 text-gray-600';
+        
+        // Show selected tab
+        document.getElementById('tab-' + tab).classList.remove('hidden');
+        
+        // Highlight selected button
+        document.getElementById('btn-' + tab).className = 'w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors bg-blue-600 text-white';
+        
+        // Save preference to localStorage
+        localStorage.setItem('profileTab', tab);
+    }
+    
+    // Load saved tab preference
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedTab = localStorage.getItem('profileTab');
+        if (savedTab) {
+            showTab(savedTab);
+        }
+    });
+    
+    function setDefaultAddress(addressId) {
+        if (confirm('Đặt địa chỉ này làm mặc định?')) {
+            fetch(`/profile/address/default/${addressId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                if (response.ok) location.reload();
+            });
+        }
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static custom_filters %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Quan ly san pham</h1>
+            <p class="text-gray-500 mt-2">Xem, chinh sua va xoa san pham</p>
+        </div>
+        <a href="{% url 'admin_add_product' %}" 
+           class="bg-green-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-600 transition">
+            + Them san pham moi
+        </a>
+    </div>
+
+    {% if products %}
+    <!-- Danh sach san pham -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-100 border-b">
+                        <th class="text-left py-4 px-4 text-gray-600 font-medium">Anh</th>
+                        <th class="text-left py-4 px-4 text-gray-600 font-medium">San pham</th>
+                        <th class="text-left py-4 px-4 text-gray-600 font-medium">Gia goc</th>
+                        <th class="text-left py-4 px-4 text-gray-600 font-medium">Gia KM</th>
+                        <th class="text-left py-4 px-4 text-gray-600 font-medium">Giam gia</th>
+                        <th class="text-left py-4 px-4 text-gray-600 font-medium">Ngay tao</th>
+                        <th class="text-left py-4 px-4 text-gray-600 font-medium">Hanh dong</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-4 px-4">
+                            <img src="{{ product.main_image.url }}" 
+                                 alt="{{ product.name }}"
+                                 class="w-16 h-16 object-cover rounded-lg">
+                        </td>
+                        <td class="py-4 px-4">
+                            <div>
+                                <p class="font-medium text-gray-800">{{ product.brand }}</p>
+                                <p class="text-gray-600">{{ product.name }}</p>
+                            </div>
+                        </td>
+                        <td class="py-4 px-4 text-gray-500 line-through">
+                            {{ product.original_price|format_vnd }}
+                        </td>
+                        <td class="py-4 px-4 text-red-600 font-medium">
+                            {{ product.sale_price|format_vnd }}
+                        </td>
+                        <td class="py-4 px-4">
+                            {% if product.discount_percent > 0 %}
+                            <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-medium">
+                                -{{ product.discount_percent }}%
+                            </span>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 px-4 text-gray-500">
+                            {{ product.created_at|date:"d/m/Y" }}
+                        </td>
+                        <td class="py-4 px-4">
+                            <div class="flex gap-2">
+                                <a href="{% url 'admin_edit_product' product.id %}" 
+                                   class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition text-sm">
+                                    Chinh sua
+                                </a>
+                                <form method="POST" action="{% url 'admin_delete_product' product.id %}" 
+                                      onsubmit="return confirm('Ban co chac muon xoa san pham nay?')">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
+                                        Xoa
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <!-- Hien thi khi khong co san pham -->
+    <div class="bg-white rounded-xl shadow-md p-12 text-center">
+        <p class="text-gray-500 text-lg">Chua co san pham nao.</p>
+        <a href="{% url 'admin_add_product' %}" 
+           class="text-primary hover:underline mt-4 inline-block">
+            Them san pham dau tien
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Quay ve trang quan tri -->
+    <div class="mt-8 text-center">
+        <a href="{% url 'admin_dashboard' %}" class="text-gray-500 hover:text-primary transition">
+            Quay lai trang quan tri
+        </a>
+    </div>
+</div>
+{% endblock %}

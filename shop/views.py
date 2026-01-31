@@ -1,0 +1,1336 @@
+"""
+Views for the phone shop application.
+Các view cho ứng dụng bán điện thoại.
+
+Các view sử dụng function-based views để dễ hiểu cho sinh viên.
+"""
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, logout
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+from .models import Product, Review, Coupon, ProductImage, StorageOption, ColorOption, Cart, CartItem, ShippingAddress, Order, OrderItem, UserProfile, UserVoucher
+from .forms import RegistrationForm, ReviewForm, CouponForm
+
+
+def home(request):
+    """
+    Trang chủ - Hiển thị danh sách sản phẩm.
+    Mỗi sản phẩm hiển thị: ảnh chính, tên, giá gốc (gạch ngang), giá khuyến mãi, phần trăm giảm giá.
+    """
+    # Lấy tất cả sản phẩm, sắp xếp theo ngày tạo mới nhất
+    products = Product.objects.all()
+
+    # Lấy sản phẩm khuyến mãi đặc biệt (có giảm giá)
+    special_promotions = []
+    show_promotion = False
+
+    # Lấy tối đa 5 sản phẩm có discount_percent > 0
+    promoted_products = products.filter(discount_percent__gt=0).order_by('-discount_percent')[:5]
+
+    if promoted_products.exists():
+        show_promotion = True
+        for product in promoted_products:
+            # Tính giá sau giảm
+            discounted_price = int(product.original_price * (100 - product.discount_percent) / 100)
+            special_promotions.append({
+                'product': product,
+                'discount_percent': int(product.discount_percent),
+                'discounted_price': discounted_price,
+            })
+
+    context = {
+        'products': products,
+        'show_promotion': show_promotion,
+        'special_promotions': special_promotions,
+        'page_title': 'Trang chủ - Cửa hàng điện thoại',
+    }
+
+    return render(request, 'home/index.html', context)
+
+
+def product_search(request):
+    """
+    Trang tìm kiếm sản phẩm.
+    Tìm kiếm theo tên, hãng, mô tả.
+    """
+    query = request.GET.get('q', '').strip()
+
+    if not query:
+        products = Product.objects.all()[:12]  # Hiển thị 12 sản phẩm mặc định
+    else:
+        # Tìm kiếm theo tên, hãng hoặc mô tả
+        products = Product.objects.filter(
+            models.Q(name__icontains=query) |
+            models.Q(brand__icontains=query) |
+            models.Q(description__icontains=query)
+        ).distinct()
+
+    context = {
+        'products': products,
+        'query': query,
+        'page_title': f'Tìm kiếm: {query} - PhoneShop' if query else 'Tìm kiếm sản phẩm',
+    }
+
+    return render(request, 'home/index.html', context)
+
+
+def product_detail(request, product_id):
+    """
+    Trang chi tiết sản phẩm.
+    Hiển thị:
+    - Gallery hình ảnh
+    - Thông tin sản phẩm (tên, giá, giảm giá, thông số kỹ thuật, mô tả)
+    - Tùy chọn bộ nhớ và màu sắc
+    - Video YouTube (nếu có)
+    - Mã giảm giá
+    - Đánh giá của khách hàng
+    """
+    # Lấy sản phẩm theo ID, nếu không có trả về 404
+    product = get_object_or_404(Product, id=product_id)
+    
+    # Lấy tất cả đánh giá của sản phẩm này
+    reviews = product.reviews.all()
+    
+    # Tính điểm đánh giá trung bình
+    avg_rating = reviews.aggregate(avg=models.Avg('rating'))['avg'] or 0
+    
+    # Xử lý form đánh giá (chỉ khi user đã đăng nhập)
+    review_form = None
+    if request.user.is_authenticated:
+        # Kiểm tra xem user đã đánh giá sản phẩm này chưa
+        user_has_reviewed = reviews.filter(user=request.user).exists()
+        if not user_has_reviewed:
+            review_form = ReviewForm()
+    
+    # Xử lý form mã giảm giá
+    coupon_form = CouponForm()
+    
+    context = {
+        'product': product,
+        'reviews': reviews,
+        'avg_rating': round(avg_rating, 1),
+        'review_form': review_form,
+        'coupon_form': coupon_form,
+        'page_title': f'{product.brand} {product.name} - Chi tiết sản phẩm',
+    }
+    
+    return render(request, 'product/detail.html', context)
+
+
+@require_POST
+def add_review(request, product_id):
+    """
+    Xử lý thêm đánh giá mới cho sản phẩm.
+    Chỉ user đã đăng nhập mới có thể đánh giá.
+    """
+    product = get_object_or_404(Product, id=product_id)
+    
+    # Kiểm tra user đã đăng nhập chưa
+    if not request.user.is_authenticated:
+        messages.error(request, 'Bạn cần đăng nhập để đánh giá sản phẩm.')
+        return redirect('product_detail', product_id=product_id)
+    
+    # Kiểm tra user đã đánh giá sản phẩm này chưa
+    if product.reviews.filter(user=request.user).exists():
+        messages.warning(request, 'Bạn đã đánh giá sản phẩm này rồi.')
+        return redirect('product_detail', product_id=product_id)
+    
+    form = ReviewForm(request.POST)
+    if form.is_valid():
+        review = form.save(commit=False)
+        review.product = product
+        review.user = request.user
+        review.save()
+        messages.success(request, 'Cảm ơn bạn đã đánh giá sản phẩm!')
+    else:
+        messages.error(request, 'Vui lòng nhập đầy đủ thông tin đánh giá.')
+    
+    return redirect('product_detail', product_id=product_id)
+
+
+@require_POST
+def apply_coupon(request, product_id):
+    """
+    Xử lý áp dụng mã giảm giá.
+    Trả về JSON response với thông tin mã giảm giá.
+    """
+    product = get_object_or_404(Product, id=product_id)
+    form = CouponForm(request.POST)
+    
+    if form.is_valid():
+        code = form.cleaned_data['code']
+        coupon = Coupon.objects.get(code=code, is_active=True)
+        
+        # Tính giá sau khi giảm
+        discount_amount = product.sale_price * coupon.percent_discount / 100
+        final_price = product.sale_price - discount_amount
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Áp dụng mã {code} thành công! Giảm {coupon.percent_discount}%.',
+            'discount_percent': coupon.percent_discount,
+            'final_price': str(int(final_price)),
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'message': form.errors['code'][0],
+        })
+
+
+def login_view(request):
+    """
+    Trang đăng nhập.
+    Sử dụng email hoặc số điện thoại để đăng nhập.
+    """
+    # Nếu user đã đăng nhập thì chuyển về trang chủ
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    if request.method == 'POST':
+        # Xử lý form đăng nhập với email hoặc số điện thoại
+        from django.contrib.auth import authenticate, login
+        email_or_phone = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+
+        if not email_or_phone or not password:
+            messages.error(request, 'Vui lòng nhập đầy đủ thông tin.')
+        else:
+            user = None
+
+            # Thử tìm theo email trước
+            if '@' in email_or_phone:
+                user = User.objects.filter(email=email_or_phone).first()
+                if user:
+                    user = authenticate(request, username=user.username, password=password)
+            else:
+                # Tìm theo username (số điện thoại)
+                user = authenticate(request, username=email_or_phone, password=password)
+
+            if user is not None:
+                login(request, user)
+                # Hiển thị chào họ và tên
+                display_name = user.first_name if user.first_name else user.email.split('@')[0]
+                messages.success(request, f'Xin chào, {display_name}!')
+
+                # Chuyển hướng về trang trước đó hoặc trang chủ
+                next_page = request.GET.get('next', '/')
+                return redirect(next_page)
+            else:
+                messages.error(request, 'Email/số điện thoại hoặc mật khẩu không đúng.')
+
+    context = {
+        'page_title': 'Đăng nhập',
+    }
+    return render(request, 'auth/login.html', context)
+
+
+def register_view(request):
+    """
+    Trang đăng ký tài khoản mới.
+    Sử dụng email làm username để đăng nhập.
+    """
+    # Nếu user đã đăng nhập thì chuyển về trang chủ
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            # Lấy phone_number từ cleaned_data
+            phone_number = form.cleaned_data.get('phone_number')
+
+            # Tạo user mới (form.save với commit=False để kiểm soát việc save)
+            user = form.save(commit=False)
+            
+            # Lưu user vào database (signal sẽ tạo UserProfile)
+            user.save()
+
+            # Lưu phone_number vào UserProfile
+            profile, created = UserProfile.objects.get_or_create(user=user)
+            profile.phone_number = phone_number
+            profile.save()
+
+            # Đăng nhập user ngay sau khi đăng ký
+            from django.contrib.auth import login
+            login(request, user)
+
+            messages.success(request, 'Đăng ký tài khoản thành công! Xin chào, {}!'.format(user.first_name))
+            return redirect('home')
+    else:
+        form = RegistrationForm()
+
+    context = {
+        'form': form,
+        'page_title': 'Đăng ký tài khoản',
+    }
+    return render(request, 'auth/register.html', context)
+
+
+def forgot_password_view(request):
+    """
+    Trang quên mật khẩu.
+    Đặt lại mật khẩu về 12345.
+    """
+    # Nếu user đã đăng nhập thì chuyển về trang chủ
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    if request.method == 'POST':
+        email_or_phone = request.POST.get('email_or_phone', '').strip()
+
+        if not email_or_phone:
+            messages.error(request, 'Vui lòng nhập email hoặc số điện thoại.')
+        else:
+            # Tìm user theo email hoặc username
+            from django.contrib.auth.models import User
+            user = None
+
+            # Thử tìm theo email trước
+            if '@' in email_or_phone:
+                user = User.objects.filter(email=email_or_phone).first()
+            else:
+                # Tìm theo username (số điện thoại cũng là username)
+                user = User.objects.filter(username=email_or_phone).first()
+
+            if user:
+                # Đặt lại mật khẩu về 12345
+                user.set_password('12345')
+                user.save()
+                messages.success(request, f'Mật khẩu của tài khoản "{user.username}" đã được đặt lại về 12345. Vui lòng đăng nhập và đổi mật khẩu mới.')
+                return redirect('login')
+            else:
+                messages.error(request, 'Không tìm thấy tài khoản với email hoặc số điện thoại này.')
+
+    context = {
+        'page_title': 'Quên mật khẩu',
+    }
+    return render(request, 'auth/forgot_password.html', context)
+
+
+def logout_view(request):
+    """
+    Xử lý đăng xuất.
+    """
+    logout(request)
+    messages.info(request, 'Bạn đã đăng xuất thành công.')
+    return redirect('home')
+
+
+def is_admin(user):
+    """
+    Hàm kiểm tra user có phải là admin không.
+    Sử dụng cho @user_passes_test decorator.
+    """
+    return user.is_staff or user.is_superuser
+
+
+@user_passes_test(is_admin)
+def admin_add_product(request):
+    """
+    Trang thêm sản phẩm mới (chỉ admin mới có thể truy cập).
+    Cho phép:
+    - Nhập thông tin cơ bản của sản phẩm
+    - Upload ảnh chính
+    - Upload nhiều ảnh chi tiết
+    - Thêm nhiều tùy chọn bộ nhớ (dynamic)
+    - Thêm nhiều tùy chọn màu sắc (dynamic)
+    """
+    if request.method == 'POST':
+        # Lấy dữ liệu từ form
+        brand = request.POST.get('brand')
+        name = request.POST.get('name')
+        main_image = request.FILES.get('main_image')
+        description = request.POST.get('description')
+        specifications = request.POST.get('specifications')
+        original_price = request.POST.get('original_price')
+        discount_percent = request.POST.get('discount_percent', 0)
+        
+        # Tính giá khuyến mãi tự động
+        original_price_val = int(original_price)
+        discount_percent_val = float(discount_percent)
+        sale_price_val = int(original_price_val * (100 - discount_percent_val) / 100)
+        
+        # Các trường còn lại
+        warranty_months = request.POST.get('warranty_months', 12)
+        youtube_id = request.POST.get('youtube_id', '')
+        free_shipping = 'free_shipping' in request.POST
+        open_box_check = 'open_box_check' in request.POST
+        return_30_days = 'return_30_days' in request.POST
+        
+        # Tạo sản phẩm mới
+        product = Product.objects.create(
+            brand=brand,
+            name=name,
+            main_image=main_image,
+            description=description,
+            specifications=specifications,
+            original_price=original_price_val,
+            sale_price=sale_price_val,
+            discount_percent=discount_percent_val,
+            warranty_months=warranty_months,
+            youtube_id=youtube_id,
+            free_shipping=free_shipping,
+            open_box_check=open_box_check,
+            return_30_days=return_30_days,
+        )
+        
+        # Thêm hình ảnh chi tiết
+        detail_images = request.FILES.getlist('detail_images')
+        for image in detail_images:
+            if image:
+                ProductImage.objects.create(product=product, image=image)
+        
+        # Thêm tùy chọn bộ nhớ (với giá gốc)
+        storage_names = request.POST.getlist('storage_name[]')
+        storage_prices = request.POST.getlist('storage_price[]')
+        for i in range(len(storage_names)):
+            if storage_names[i].strip():
+                StorageOption.objects.create(
+                    product=product,
+                    storage=storage_names[i],
+                    original_price=storage_prices[i] if i < len(storage_prices) else 0,
+                )
+        
+        # Thêm tùy chọn màu sắc
+        color_names = request.POST.getlist('color_name[]')
+        color_images = request.FILES.getlist('color_image[]')
+        for i in range(len(color_names)):
+            if color_names[i].strip() and i < len(color_images):
+                if color_images[i]:
+                    ColorOption.objects.create(
+                        product=product,
+                        color_name=color_names[i],
+                        color_image=color_images[i],
+                    )
+        
+        messages.success(request, f'Đã thêm sản phẩm "{product.name}" thành công!')
+        return redirect('admin_product_list')
+    
+    context = {
+        'page_title': 'Thêm sản phẩm mới - Admin',
+    }
+    return render(request, 'admin/add_product.html', context)
+
+
+# Import models để dùng aggregate
+from django.db import models
+
+
+def profile_view(request):
+    """
+    Trang profile của người dùng.
+    Hiển thị thông tin tài khoản, địa chỉ giao hàng và nút truy cập trang quản trị (nếu là admin).
+    """
+    if not request.user.is_authenticated:
+        messages.warning(request, 'Vui lòng đăng nhập để xem profile.')
+        return redirect('login')
+    
+    user = request.user
+    
+    # Xử lý POST request (cập nhật thông tin)
+    if request.method == 'POST':
+        from django.contrib.auth import update_session_auth_hash
+        
+        # Cập nhật họ tên
+        full_name = request.POST.get('full_name', '').strip()
+        if full_name:
+            user.first_name = full_name
+            user.save()
+        
+        # Cập nhật số điện thoại (chỉ khi chưa được xác thực)
+        phone_number = request.POST.get('phone_number', '').strip()
+        is_phone_verified = getattr(user.profile, 'is_phone_verified', False)
+        
+        if phone_number and not is_phone_verified:
+            try:
+                user.profile.phone_number = phone_number
+                user.profile.is_phone_verified = True  # Khóa số điện thoại sau khi cập nhật
+                user.profile.save()
+                messages.success(request, 'Cập nhật số điện thoại thành công! Số điện thoại đã được khóa.')
+            except Exception as e:
+                messages.error(request, 'Có lỗi xảy ra. Vui lòng thử lại.')
+        
+        # Đổi mật khẩu
+        old_password = request.POST.get('old_password', '').strip()
+        new_password1 = request.POST.get('new_password1', '').strip()
+        new_password2 = request.POST.get('new_password2', '').strip()
+        
+        if old_password or new_password1 or new_password2:
+            if not old_password:
+                messages.error(request, 'Vui lòng nhập mật khẩu hiện tại.')
+            elif not new_password1:
+                messages.error(request, 'Vui lòng nhập mật khẩu mới.')
+            elif new_password1 != new_password2:
+                messages.error(request, 'Mật khẩu mới không khớp.')
+            elif len(new_password1) < 6:
+                messages.error(request, 'Mật khẩu mới phải có ít nhất 6 ký tự.')
+            else:
+                # Kiểm tra mật khẩu cũ
+                if user.check_password(old_password):
+                    user.set_password(new_password1)
+                    user.save()
+                    update_session_auth_hash(request, user)
+                    messages.success(request, 'Đổi mật khẩu thành công!')
+                else:
+                    messages.error(request, 'Mật khẩu hiện tại không đúng.')
+        elif full_name or (phone_number and not is_phone_verified):
+            messages.success(request, 'Cập nhật thông tin thành công!')
+    
+    # Kiểm tra user có phải admin không
+    is_admin_user = request.user.is_staff or request.user.is_superuser
+    
+    # Lấy số lượng đánh giá của user
+    user_reviews_count = request.user.reviews.count()
+    
+    # Lấy danh sách địa chỉ của user
+    addresses = request.user.shipping_addresses.all().order_by('-is_default', '-created_at')
+    
+    # Lấy số điện thoại và trạng thái xác thực từ UserProfile
+    try:
+        if hasattr(request.user, 'profile'):
+            phone_number = request.user.profile.phone_number
+            is_phone_verified = getattr(request.user.profile, 'is_phone_verified', False)
+        else:
+            phone_number = None
+            is_phone_verified = False
+    except:
+        phone_number = None
+        is_phone_verified = False
+    
+    # Xác định tab active
+    active_tab = request.GET.get('tab', '')
+    
+    # Lấy danh sách voucher của user (chỉ lấy voucher còn hạn và active)
+    from django.utils import timezone
+    vouchers = UserVoucher.objects.filter(
+        user=request.user,
+        coupon__is_active=True
+    ).filter(
+        models.Q(coupon__expires_at__isnull=True) | 
+        models.Q(coupon__expires_at__gt=timezone.now())
+    ).select_related('coupon').order_by('-created_at')
+    
+    context = {
+        'user': request.user,
+        'is_admin': is_admin_user,
+        'reviews_count': user_reviews_count,
+        'addresses': addresses,
+        'phone_number': phone_number,
+        'is_phone_verified': is_phone_verified,
+        'active_tab': active_tab,
+        'vouchers': vouchers,
+        'page_title': f'Profile - {request.user.username}',
+    }
+    
+    return render(request, 'auth/profile.html', context)
+
+
+@require_POST
+def address_add(request):
+    """
+    Thêm địa chỉ giao hàng mới.
+    """
+    if not request.user.is_authenticated:
+        messages.warning(request, 'Vui lòng đăng nhập.')
+        return redirect('login')
+    
+    full_name = request.POST.get('full_name', '').strip()
+    phone = request.POST.get('phone', '').strip()
+    address = request.POST.get('address', '').strip()
+    
+    if not full_name or not phone or not address:
+        messages.error(request, 'Vui lòng nhập đầy đủ thông tin.')
+        return redirect('profile')
+    
+    # Nếu đánh dấu là mặc định, bỏ chọn địa chỉ mặc định cũ
+    if 'is_default' in request.POST:
+        ShippingAddress.objects.filter(user=request.user, is_default=True).update(is_default=False)
+    
+    ShippingAddress.objects.create(
+        user=request.user,
+        full_name=full_name,
+        phone=phone,
+        address=address,
+        is_default='is_default' in request.POST
+    )
+    
+    messages.success(request, 'Đã thêm địa chỉ mới.')
+    return redirect('profile')
+
+
+@require_POST
+def address_set_default(request):
+    """
+    Đặt địa chỉ mặc định từ form chọn nhiều địa chỉ.
+    """
+    if not request.user.is_authenticated:
+        messages.warning(request, 'Vui lòng đăng nhập.')
+        return redirect('login')
+    
+    default_address_id = request.POST.get('default_address')
+    
+    if default_address_id:
+        try:
+            address_id = int(default_address_id)
+            # Bỏ đánh dấu địa chỉ mặc định cũ
+            ShippingAddress.objects.filter(user=request.user, is_default=True).update(is_default=False)
+            # Đặt địa chỉ mới làm mặc định
+            address = get_object_or_404(ShippingAddress, id=address_id, user=request.user)
+            address.is_default = True
+            address.save()
+            messages.success(request, 'Đã cập nhật địa chỉ mặc định.')
+        except (ShippingAddress.DoesNotExist, ValueError):
+            messages.error(request, 'Địa chỉ không hợp lệ.')
+    else:
+        messages.warning(request, 'Vui lòng chọn địa chỉ mặc định.')
+    
+    return redirect('profile' + '?tab=addresses')
+
+
+@require_POST
+def address_delete(request, address_id):
+    """
+    Xóa địa chỉ giao hàng.
+    """
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    address = get_object_or_404(ShippingAddress, id=address_id, user=request.user)
+    address.delete()
+    
+    messages.success(request, 'Đã xóa địa chỉ.')
+    return redirect('profile')
+
+
+@require_POST
+def voucher_delete(request):
+    """
+    Xóa voucher đã chọn của user.
+    """
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    voucher_ids = request.POST.getlist('voucher_ids')
+    
+    if voucher_ids:
+        # Chỉ xóa voucher thuộc về user hiện tại
+        UserVoucher.objects.filter(id__in=voucher_ids, user=request.user).delete()
+        messages.success(request, f'Đã xóa {len(voucher_ids)} voucher.')
+    else:
+        messages.warning(request, 'Vui lòng chọn voucher cần xóa.')
+    
+    return redirect('profile' + '?tab=vouchers')
+
+
+@user_passes_test(is_admin)
+def admin_dashboard(request):
+    """
+    Trang admin chính thức (q    Dashboard quản lý chun22.html).
+ửa hàng.
+    """
+    # Thống kê tổng quan
+    total_products = Product.objects.count()
+    total_users = User.objects.count()
+    total_reviews = Review.objects.count()
+    total_coupons = Coupon.objects.count()
+    total_orders = Order.objects.count()
+    
+    # Sản phẩm gần đây
+    recent_products = Product.objects.all().order_by('-created_at')[:5]
+    
+    # Đánh giá gần đây
+    recent_reviews = Review.objects.all().order_by('-created_at')[:5]
+    
+    context = {
+        'total_products': total_products,
+        'total_users': total_users,
+        'total_reviews': total_reviews,
+        'total_coupons': total_coupons,
+        'total_orders': total_orders,
+        'recent_products': recent_products,
+        'recent_reviews': recent_reviews,
+        'page_title': 'Trang quản trị - PhoneShop',
+    }
+    
+    return render(request, 'admin/qhun22.html', context)
+
+
+@user_passes_test(is_admin)
+def admin_product_list(request):
+    """
+    Trang danh sách tất cả sản phẩm (quản lý).
+    Admin có thể xem, chỉnh sửa và xóa sản phẩm.
+    """
+    products = Product.objects.all().order_by('-created_at')
+    
+    context = {
+        'products': products,
+        'page_title': 'Quan ly san pham - Admin',
+    }
+    
+    return render(request, 'admin/product_list.html', context)
+
+
+@user_passes_test(is_admin)
+def admin_edit_product(request, product_id):
+    """
+    Trang chỉnh sửa sản phẩm (chỉ admin).
+    Hiển thị thông tin hiện có và cho phép cập nhật.
+    """
+    product = get_object_or_404(Product, id=product_id)
+    
+    if request.method == 'POST':
+        # Lay du lieu tu form
+        product.brand = request.POST.get('brand')
+        product.name = request.POST.get('name')
+        product.description = request.POST.get('description')
+        product.specifications = request.POST.get('specifications')
+        
+        # Tinh toan gia moi
+        original_price = int(request.POST.get('original_price', 0))
+        discount_percent = float(request.POST.get('discount_percent', 0))
+        sale_price = int(original_price * (100 - discount_percent) / 100)
+        
+        product.original_price = original_price
+        product.sale_price = sale_price
+        product.discount_percent = discount_percent
+        product.warranty_months = request.POST.get('warranty_months', 12)
+        product.youtube_id = request.POST.get('youtube_id', '')
+        
+        # Checkbox values
+        product.free_shipping = 'free_shipping' in request.POST
+        product.open_box_check = 'open_box_check' in request.POST
+        product.return_30_days = 'return_30_days' in request.POST
+        
+        # Upload anh chinh moi neu co
+        new_main_image = request.FILES.get('main_image')
+        if new_main_image:
+            product.main_image = new_main_image
+        
+        product.save()
+        
+        # Xu ly anh chi tiet moi
+        new_detail_images = request.FILES.getlist('detail_images')
+        for image in new_detail_images:
+            if image:
+                ProductImage.objects.create(product=product, image=image)
+        
+        # Xoa cac tuy chon cu va tao moi
+        StorageOption.objects.filter(product=product).delete()
+        ColorOption.objects.filter(product=product).delete()
+        
+        # Them tuy chon bo nho (voi gia goc)
+        storage_names = request.POST.getlist('storage_name[]')
+        storage_prices = request.POST.getlist('storage_price[]')
+        for i in range(len(storage_names)):
+            if storage_names[i].strip():
+                StorageOption.objects.create(
+                    product=product,
+                    storage=storage_names[i],
+                    original_price=storage_prices[i] if i < len(storage_prices) else 0,
+                )
+        
+        # Them tuy chon mau sac
+        color_names = request.POST.getlist('color_name[]')
+        color_images = request.FILES.getlist('color_image[]')
+        for i in range(len(color_names)):
+            if color_names[i].strip():
+                ColorOption.objects.create(
+                    product=product,
+                    color_name=color_names[i],
+                    color_image=color_images[i] if i < len(color_images) and color_images[i] else None,
+                )
+        
+        messages.success(request, f'Da cap nhat san pham "{product.name}" thanh cong!')
+        return redirect('admin_product_list')
+    
+    context = {
+        'product': product,
+        'page_title': f'Chinh sua - {product.brand} {product.name}',
+        'is_edit': True,
+    }
+    
+    return render(request, 'admin/edit_product.html', context)
+
+
+@user_passes_test(is_admin)
+@require_POST
+def admin_delete_product(request, product_id):
+    """
+    Xoa san pham (chi admin).
+    Xoa ca cac file anh trong storage.
+    """
+    import os
+    from django.conf import settings
+    
+    product = get_object_or_404(Product, id=product_id)
+    product_name = product.name
+    
+    # Xoa file anh chinh
+    if product.main_image:
+        try:
+            main_image_path = os.path.join(settings.MEDIA_ROOT, str(product.main_image))
+            if os.path.exists(main_image_path):
+                os.remove(main_image_path)
+        except Exception as e:
+            print(f"Loi xoa anh chinh: {e}")
+    
+    # Xoa cac anh chi tiet va file
+    for img in product.images.all():
+        if img.image:
+            try:
+                img_path = os.path.join(settings.MEDIA_ROOT, str(img.image))
+                if os.path.exists(img_path):
+                    os.remove(img_path)
+            except Exception as e:
+                print(f"Loi xoa anh chi tiet: {e}")
+    
+    # Xoa cac anh mau sac va file
+    for color in product.color_options.all():
+        if color.color_image:
+            try:
+                color_path = os.path.join(settings.MEDIA_ROOT, str(color.color_image))
+                if os.path.exists(color_path):
+                    os.remove(color_path)
+            except Exception as e:
+                print(f"Loi xoa anh mau: {e}")
+    
+    # Xoa cac ban ghi lien quan
+    product.images.all().delete()
+    product.storage_options.all().delete()
+    product.color_options.all().delete()
+    product.reviews.all().delete()
+    
+    # Xoa san pham
+    product.delete()
+    
+    messages.success(request, f'Da xoa san pham "{product_name}" thanh cong!')
+    return redirect('admin_product_list')
+
+
+# =====================
+# GIỎ HÀNG (CART)
+# =====================
+
+def get_or_create_cart(request):
+    """
+    Lấy hoặc tạo giỏ hàng cho user hiện tại.
+    Hỗ cả user đã đăng nhập và guest (session).
+    """
+    if request.user.is_authenticated:
+        # User đã đăng nhập - dùng user object
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        # Xóa cart theo session nếu có
+        if request.session.get('cart_session_key'):
+            Cart.objects.filter(session_key=request.session['cart_session_key']).delete()
+    else:
+        # Guest - dùng session
+        session_key = request.session.session_key
+        if not session_key:
+            request.session.create()
+            session_key = request.session.session_key
+        
+        cart, created = Cart.objects.get_or_create(session_key=session_key)
+    
+    return cart
+
+
+def cart_detail(request):
+    """
+    Trang xem giỏ hàng.
+    """
+    cart = get_or_create_cart(request)
+    
+    context = {
+        'cart': cart,
+        'page_title': 'Giỏ hàng - PhoneShop',
+    }
+    
+    return render(request, 'cart/detail.html', context)
+
+
+@require_POST
+def cart_add(request, product_id):
+    """
+    Thêm sản phẩm vào giỏ hàng.
+    """
+    product = get_object_or_404(Product, id=product_id)
+    cart = get_or_create_cart(request)
+    
+    # Lấy dữ liệu từ form
+    storage = request.POST.get('storage', '')
+    color = request.POST.get('color', '')
+    quantity = int(request.POST.get('quantity', 1))
+    
+    # Xác định giá - ưu tiên storage price nếu có
+    if storage:
+        storage_obj = product.storage_options.filter(storage=storage).first()
+        if storage_obj:
+            price = storage_obj.sale_price
+        else:
+            price = product.sale_price
+    else:
+        price = product.sale_price
+    
+    # Kiểm tra sản phẩm đã có trong giỏ chưa (cùng product, storage, color)
+    existing_item = cart.items.filter(
+        product=product,
+        storage=storage,
+        color=color
+    ).first()
+    
+    if existing_item:
+        # Cập nhật số lượng
+        existing_item.quantity += quantity
+        existing_item.save()
+        messages.success(request, f'Đã cập nhật số lượng {product.name}')
+    else:
+        # Tạo mới
+        CartItem.objects.create(
+            cart=cart,
+            product=product,
+            storage=storage,
+            color=color,
+            quantity=quantity,
+            price=price
+        )
+        messages.success(request, f'Đã thêm {product.name} vào giỏ hàng')
+    
+    return redirect('cart_detail')
+
+
+@require_POST
+def cart_update(request, item_id):
+    """
+    Cập nhật số lượng sản phẩm trong giỏ hàng.
+    """
+    cart = get_or_create_cart(request)
+    item = get_object_or_404(CartItem, id=item_id, cart=cart)
+    
+    quantity = int(request.POST.get('quantity', 1))
+    
+    if quantity > 0:
+        item.quantity = quantity
+        item.save()
+        messages.success(request, 'Đã cập nhật giỏ hàng')
+    else:
+        item.delete()
+        messages.success(request, 'Đã xóa sản phẩm khỏi giỏ hàng')
+    
+    return redirect('cart_detail')
+
+
+@require_POST
+def cart_remove(request, item_id):
+    """
+    Xóa sản phẩm khỏi giỏ hàng.
+    """
+    cart = get_or_create_cart(request)
+    item = get_object_or_404(CartItem, id=item_id, cart=cart)
+    
+    product_name = item.product.name
+    item.delete()
+    
+    messages.success(request, f'Đã xóa {product_name} khỏi giỏ hàng')
+    return redirect('cart_detail')
+
+
+def cart_clear(request):
+    """
+    Xóa tất cả sản phẩm trong giỏ hàng.
+    """
+    cart = get_or_create_cart(request)
+    cart.items.all().delete()
+    
+    messages.success(request, 'Đã xóa toàn bộ giỏ hàng')
+    return redirect('cart_detail')
+
+
+@require_POST
+def cart_update_all(request):
+    """
+    Cập nhật số lượng cho tất cả sản phẩm trong giỏ.
+    """
+    cart = get_or_create_cart(request)
+    
+    for item in cart.items.all():
+        quantity = int(request.POST.get(f'quantity_{item.id}', item.quantity))
+        if quantity > 0:
+            item.quantity = quantity
+            item.save()
+        else:
+            item.delete()
+    
+    messages.success(request, 'Đã cập nhật giỏ hàng')
+    return redirect('cart_detail')
+
+
+@require_POST
+def cart_remove_bulk(request):
+    """
+    Xóa nhiều sản phẩm đã chọn khỏi giỏ hàng.
+    """
+    cart = get_or_create_cart(request)
+    selected_items = request.POST.getlist('selected_items')
+    
+    if selected_items:
+        deleted_count = cart.items.filter(id__in=selected_items).delete()[0]
+        messages.success(request, f'Đã xóa {deleted_count} sản phẩm đã chọn')
+    else:
+        messages.warning(request, 'Vui lòng chọn sản phẩm cần xóa')
+    
+    return redirect('cart_detail')
+
+
+# =====================
+# THANH TOÁN (CHECKOUT)
+# =====================
+
+def checkout_view(request):
+    """
+    Trang thanh toán.
+    Hiển thị địa chỉ, sản phẩm đã chọn, voucher và nút đặt hàng.
+    """
+    if not request.user.is_authenticated:
+        messages.warning(request, 'Vui lòng đăng nhập để thanh toán.')
+        return redirect('login')
+    
+    cart = get_or_create_cart(request)
+    
+    if not cart.items.exists():
+        messages.warning(request, 'Giỏ hàng trống.')
+        return redirect('home')
+    
+    # Lấy danh sách sản phẩm được chọn từ session
+    selected_items = request.session.get('selected_cart_items', [])
+    if not selected_items:
+        # Nếu không có session, lấy tất cả
+        selected_items = list(cart.items.values_list('id', flat=True))
+    
+    # Lọc các sản phẩm được chọn
+    cart_items = cart.items.filter(id__in=selected_items)
+    
+    if not cart_items.exists():
+        messages.warning(request, 'Vui lòng chọn sản phẩm để thanh toán.')
+        return redirect('cart_detail')
+    
+    # Tính tổng tiền
+    subtotal = sum(item.subtotal for item in cart_items)
+    
+    # Lấy địa chỉ mặc định
+    default_address = request.user.shipping_addresses.filter(is_default=True).first()
+    if not default_address:
+        default_address = request.user.shipping_addresses.first()
+    
+    # Xử lý voucher từ session
+    coupon_code = request.session.get('applied_coupon')
+    coupon = None
+    discount_amount = 0
+    
+    if coupon_code:
+        coupon = Coupon.objects.filter(code=coupon_code, is_active=True).first()
+        if coupon:
+            discount_amount = coupon.calculate_discount(subtotal)
+    
+    total = subtotal - discount_amount
+    if total < 0:
+        total = 0
+    
+    context = {
+        'cart_items': cart_items,
+        'subtotal': subtotal,
+        'coupon': coupon,
+        'discount_amount': discount_amount,
+        'total': total,
+        'default_address': default_address,
+        'page_title': 'Thanh toán - PhoneShop',
+    }
+    
+    return render(request, 'cart/checkout.html', context)
+
+
+@require_POST
+def checkout_place_order(request):
+    """
+    Xử lý đặt hàng.
+    """
+    if not request.user.is_authenticated:
+        messages.warning(request, 'Vui lòng đăng nhập.')
+        return redirect('login')
+    
+    cart = get_or_create_cart(request)
+    
+    # Lấy danh sách sản phẩm được chọn
+    selected_items = request.session.get('selected_cart_items', [])
+    if not selected_items:
+        selected_items = list(cart.items.values_list('id', flat=True))
+    
+    cart_items = cart.items.filter(id__in=selected_items)
+    
+    if not cart_items.exists():
+        messages.warning(request, 'Không có sản phẩm để thanh toán.')
+        return redirect('cart_detail')
+    
+    # Lấy thông tin từ form
+    full_name = request.POST.get('full_name', '').strip()
+    phone = request.POST.get('phone', '').strip()
+    address = request.POST.get('address', '').strip()
+    payment_method = request.POST.get('payment_method', 'cod')
+    note = request.POST.get('note', '').strip()
+    
+    if not full_name or not phone or not address:
+        messages.error(request, 'Vui lòng nhập đầy đủ thông tin giao hàng.')
+        return redirect('checkout')
+    
+    # Tính tổng tiền
+    subtotal = sum(item.subtotal for item in cart_items)
+    
+    # Xử lý voucher
+    coupon_code = request.session.get('applied_coupon')
+    coupon = None
+    discount_amount = 0
+    
+    if coupon_code:
+        coupon = Coupon.objects.filter(code=coupon_code, is_active=True).first()
+        if coupon:
+            discount_amount = coupon.calculate_discount(subtotal)
+    
+    total = subtotal - discount_amount
+    if total < 0:
+        total = 0
+    
+    # Tạo đơn hàng
+    order = Order.objects.create(
+        user=request.user,
+        full_name=full_name,
+        phone=phone,
+        address=address,
+        payment_method=payment_method,
+        payment_status='unpaid' if payment_method == 'online' else 'cod',
+        subtotal=subtotal,
+        discount_amount=discount_amount,
+        coupon_code=coupon_code or '',
+        total=total,
+        note=note,
+    )
+    
+    # Tạo các sản phẩm trong đơn hàng
+    for item in cart_items:
+        OrderItem.objects.create(
+            order=order,
+            product=item.product,
+            product_name=f"{item.product.brand} {item.product.name}",
+            storage=item.storage,
+            color=item.color,
+            quantity=item.quantity,
+            price=item.price,
+        )
+    
+    # Xóa sản phẩm đã đặt khỏi giỏ hàng
+    cart_items.delete()
+    
+    # Xóa voucher khỏi session
+    if 'applied_coupon' in request.session:
+        del request.session['applied_coupon']
+    if 'selected_cart_items' in request.session:
+        del request.session['selected_cart_items']
+    
+    # Lưu order_id vào session để hiển thị trang thành công
+    request.session['last_order_id'] = order.id
+    
+    return redirect('checkout_success')
+
+
+def checkout_success(request):
+    """
+    Trang thông báo đặt hàng thành công.
+    """
+    order_id = request.session.get('last_order_id')
+    
+    if not order_id:
+        return redirect('home')
+    
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    context = {
+        'order': order,
+        'page_title': 'Đặt hàng thành công - PhoneShop',
+    }
+    
+    return render(request, 'cart/success.html', context)
+
+
+@login_required
+def order_tracking(request):
+    """
+    Trang tra cứu đơn hàng của người dùng.
+    Hiển thị danh sách đơn hàng đã đặt với trạng thái.
+    """
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    
+    context = {
+        'orders': orders,
+        'page_title': 'Tra cứu đơn hàng - PhoneShop',
+    }
+    
+    return render(request, 'cart/order_tracking.html', context)
+
+
+@login_required
+def order_detail(request, order_id):
+    """
+    Trang chi tiết một đơn hàng.
+    """
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    order_items = order.items.all()
+    
+    context = {
+        'order': order,
+        'order_items': order_items,
+        'page_title': f'Đơn hàng #{order.id} - PhoneShop',
+    }
+    
+    return render(request, 'cart/order_detail.html', context)
+
+
+@require_POST
+def apply_coupon(request):
+    """
+    Áp dụng mã giảm giá.
+    """
+    code = request.POST.get('code', '').strip().upper()
+    
+    if not code:
+        return JsonResponse({'success': False, 'message': 'Vui lòng nhập mã giảm giá.'})
+    
+    coupon = Coupon.objects.filter(code=code, is_active=True).first()
+    
+    if not coupon:
+        # Xóa coupon cũ nếu có
+        if 'applied_coupon' in request.session:
+            del request.session['applied_coupon']
+        return JsonResponse({'success': False, 'message': 'Mã giảm giá không hợp lệ hoặc đã hết hạn.'})
+    
+    # Lưu vào session
+    request.session['applied_coupon'] = code
+    
+    # Tính lại tổng tiền
+    cart = get_or_create_cart(request)
+    selected_items = request.session.get('selected_cart_items', list(cart.items.values_list('id', flat=True)))
+    cart_items = cart.items.filter(id__in=selected_items)
+    subtotal = sum(item.subtotal for item in cart_items)
+    discount = coupon.calculate_discount(subtotal)
+    total = subtotal - discount
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'Áp dụng mã {code} thành công!',
+        'coupon_code': code,
+        'discount_amount': int(discount),
+        'total': int(total),
+    })
+
+
+def remove_coupon(request):
+    """
+    Xóa mã giảm giá đã áp dụng.
+    """
+    if 'applied_coupon' in request.session:
+        del request.session['applied_coupon']
+    
+    messages.success(request, 'Đã hủy mã giảm giá.')
+    return redirect('cart_detail')
+
+
+def buy_now(request, product_id):
+    """
+    Mua ngay - Thêm sản phẩm vào giỏ và chuyển đến giỏ hàng.
+    """
+    if not request.user.is_authenticated:
+        messages.warning(request, 'Vui lòng đăng nhập để mua hàng.')
+        return redirect('login')
+    
+    product = get_object_or_404(Product, id=product_id)
+    cart = get_or_create_cart(request)
+    
+    # Lấy thông tin từ form
+    storage = request.POST.get('storage', '')
+    color = request.POST.get('color', '')
+    quantity = int(request.POST.get('quantity', 1))
+    
+    # Xác định giá
+    if storage:
+        storage_obj = product.storage_options.filter(storage=storage).first()
+        if storage_obj:
+            price = storage_obj.sale_price
+        else:
+            price = product.sale_price
+    else:
+        price = product.sale_price
+    
+    # Thêm vào giỏ hàng
+    cart_item, created = CartItem.objects.get_or_create(
+        cart=cart,
+        product=product,
+        storage=storage,
+        color=color,
+        defaults={'price': price, 'quantity': quantity}
+    )
+    
+    if not created:
+        cart_item.quantity += quantity
+        cart_item.save()
+    
+    # Lưu sản phẩm được chọn vào session
+    request.session['selected_cart_items'] = [cart_item.id]
+    
+    messages.success(request, f'Đã thêm {product.name} vào giỏ hàng.')
+    return redirect('cart_detail')
+
+
+def select_cart_items(request):
+    """
+    Lưu danh sách sản phẩm được chọn vào session và chuyển đến checkout.
+    """
+    if request.method == 'POST':
+        import json
+        
+        # Lấy dữ liệu từ form
+        raw_data = request.POST.get('selected_items', '[]')
+        
+        try:
+            # Thử parse JSON
+            if raw_data.startswith('['):
+                selected_ids = json.loads(raw_data)
+            else:
+                # Nếu không phải JSON, thử getlist
+                selected_ids = request.POST.getlist('selected_items')
+        except (json.JSONDecodeError, TypeError, ValueError):
+            selected_ids = request.POST.getlist('selected_items')
+        
+        # Nếu vẫn là list chứa JSON string, xử lý
+        if selected_ids and isinstance(selected_ids, list):
+            first_item = selected_ids[0]
+            if isinstance(first_item, str) and first_item.startswith('['):
+                try:
+                    selected_ids = json.loads(first_item)
+                except (json.JSONDecodeError, TypeError, ValueError):
+                    selected_ids = []
+        
+        if not selected_ids:
+            messages.warning(request, 'Vui lòng chọn sản phẩm để thanh toán.')
+            return redirect('cart_detail')
+        
+        # Lưu vào session
+        request.session['selected_cart_items'] = [int(id) for id in selected_ids]
+        
+        return redirect('checkout')
+    
+    return redirect('cart_detail')
+

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-16">
+    <div class="max-w-2xl mx-auto text-center">
+        <!-- Icon thành công -->
+        <div class="w-24 h-24 bg-green-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+            <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+        </div>
+        
+        <!-- Tiêu đề -->
+        <h1 class="text-3xl font-bold text-green-600 mb-4">Đặt hàng thành công! 🎉</h1>
+        
+        <!-- Thông tin đơn hàng -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8 text-left">
+            <div class="mb-4 pb-4 border-b">
+                <p class="text-gray-600">Mã đơn hàng:</p>
+                <p class="text-2xl font-bold text-primary">#{{ order.id }}</p>
+            </div>
+            
+            <div class="space-y-2 mb-4 pb-4 border-b">
+                <p class="text-gray-600">Người nhận:</p>
+                <p class="font-semibold">{{ order.full_name }} - {{ order.phone }}</p>
+                <p class="text-gray-600">{{ order.address }}</p>
+            </div>
+            
+            <div class="space-y-2 mb-4 pb-4 border-b">
+                <p class="text-gray-600">Phương thức thanh toán:</p>
+                <p class="font-semibold">
+                    {% if order.payment_method == 'cod' %}
+                    💵 Thanh toán khi nhận hàng (COD)
+                    {% else %}
+                    💳 Thanh toán online
+                    {% endif %}
+                </p>
+            </div>
+            
+            <div class="space-y-2">
+                <p class="text-gray-600">Tổng tiền:</p>
+                <p class="text-3xl font-bold text-red-600">{{ order.total|format_vnd }}</p>
+            </div>
+        </div>
+        
+        <!-- Thông báo -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+            <p class="text-blue-700">
+                Cảm ơn bạn đã đặt hàng! Đơn hàng của bạn đang được xử lý và sẽ được giao đến bạn trong thời gian sớm nhất.
+            </p>
+        </div>
+        
+        <!-- Nút hành động -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{% url 'home' %}" 
+               class="px-8 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-blue-600 transition">
+                🏠 Quay lại trang chủ
+            </a>
+            <a href="{% url 'profile' %}" 
+               class="px-8 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition">
+                👤 Xem đơn hàng trong Profile
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

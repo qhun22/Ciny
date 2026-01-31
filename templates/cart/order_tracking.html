@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">📦 Tra cứu đơn hàng</h1>
+        <p class="text-gray-500 mt-2">Xem trạng thái đơn hàng của bạn</p>
+    </div>
+
+    {% if orders %}
+        <!-- Danh sách đơn hàng -->
+        <div class="space-y-4">
+            {% for order in orders %}
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b">
+                    <div class="flex flex-wrap justify-between items-center gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Mã đơn hàng</p>
+                            <p class="font-semibold text-lg">#{{ order.id }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Ngày đặt</p>
+                            <p class="font-medium">{{ order.created_at|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Tổng tiền</p>
+                            <p class="font-semibold text-lg text-red-500">{{ order.total|format_vnd }}đ</p>
+                        </div>
+                        <div>
+                            {% if order.status == 'pending' %}
+                                <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                                    ⏳ Chờ duyệt
+                                </span>
+                            {% elif order.status == 'approved' %}
+                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                                    ✅ Đã duyệt
+                                </span>
+                            {% elif order.status == 'processing' %}
+                                <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                                    📦 Tiếp nhận
+                                </span>
+                            {% elif order.status == 'completed' %}
+                                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                                    🎉 Thành công
+                                </span>
+                            {% elif order.status == 'cancelled' %}
+                                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                                    ❌ Đã hủy
+                                </span>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'order_detail' order.id %}" 
+                           class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition text-sm">
+                            Xem chi tiết
+                        </a>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+                        <div>
+                            <span class="font-medium">Người nhận:</span> {{ order.full_name }}
+                        </div>
+                        <div>
+                            <span class="font-medium">SĐT:</span> {{ order.phone }}
+                        </div>
+                        <div>
+                            <span class="font-medium">Địa chỉ:</span> {{ order.address|truncatechars:50 }}
+                        </div>
+                        <div>
+                            <span class="font-medium">Thanh toán:</span> 
+                            {% if order.payment_method == 'cod' %}
+                                Tiền mặt (COD)
+                            {% else %}
+                                Online
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Không có đơn hàng -->
+        <div class="text-center py-16">
+            <div class="text-6xl mb-4">📭</div>
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">Chưa có đơn hàng nào</h2>
+            <p class="text-gray-500 mb-6">Bạn chưa đặt bất kỳ đơn hàng nào.</p>
+            <a href="{% url 'home' %}" 
+               class="inline-block px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-blue-600 transition">
+                🛍️ Tiếp tục mua sắm
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

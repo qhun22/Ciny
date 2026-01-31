@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">🎛️ Trang quản trị - PhoneShop</h1>
+        <p class="text-gray-500 mt-2">Chào mừng admin, đây là trang quản lý cửa hàng</p>
+    </div>
+
+    <!-- Thống kê tổng quan -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <!-- Card 1: Sản phẩm -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Tổng sản phẩm</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ total_products }}</p>
+                </div>
+                <div class="text-4xl">📱</div>
+            </div>
+        </div>
+        
+        <!-- Card 2: Người dùng -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Tổng người dùng</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ total_users }}</p>
+                </div>
+                <div class="text-4xl">👥</div>
+            </div>
+        </div>
+        
+        <!-- Card 3: Đánh giá -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Tổng đánh giá</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ total_reviews }}</p>
+                </div>
+                <div class="text-4xl">⭐</div>
+            </div>
+        </div>
+        
+        <!-- Card 4: Mã giảm giá -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Mã giảm giá</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ total_coupons }}</p>
+                </div>
+                <div class="text-4xl">🎫</div>
+            </div>
+        </div>
+        
+        <!-- Card 5: Đơn hàng -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Đơn hàng</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ total_orders }}</p>
+                </div>
+                <div class="text-4xl">📦</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu quản lý -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <!-- Thêm sản phẩm mới -->
+        <a href="{% url 'admin_add_product' %}" 
+           class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                    ➕
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Thêm sản phẩm mới</h3>
+                    <p class="text-sm text-gray-500">Thêm điện thoại vào cửa hàng</p>
+                </div>
+            </div>
+        </a>
+        
+        <!-- Quản lý sản phẩm -->
+        <a href="{% url 'admin_product_list' %}" class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                    📦
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Quản lý sản phẩm</h3>
+                    <p class="text-sm text-gray-500">Chỉnh sửa, xóa sản phẩm</p>
+                </div>
+            </div>
+        </a>
+        
+        <!-- Quản lý đơn hàng -->
+        <a href="/admin/shop/order/" class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                    🛒
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Quản lý đơn hàng</h3>
+                    <p class="text-sm text-gray-500">Xem, duyệt và cập nhật đơn hàng</p>
+                </div>
+            </div>
+        </a>
+        
+        <!-- Quản lý người dùng -->
+        <a href="{% url 'admin_product_list' %}" class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                    👤
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Quản lý người dùng</h3>
+                    <p class="text-sm text-gray-500">Xem danh sách khách hàng</p>
+                </div>
+            </div>
+        </a>
+        
+        <!-- Quản lý mã giảm giá -->
+        <a href="{% url 'admin_product_list' %}" class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                    🎫
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Quản lý mã giảm giá</h3>
+                    <p class="text-sm text-gray-500">Tạo và chỉnh sửa coupon</p>
+                </div>
+            </div>
+        </a>
+        
+        <!-- Xem trang web -->
+        <a href="{% url 'home' %}" class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                    🌐
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Xem trang web</h3>
+                    <p class="text-sm text-gray-500">Xem trang chủ cửa hàng</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Sản phẩm gần đây -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">📱 Sản phẩm gần đây</h2>
+            <a href="{% url 'admin_product_list' %}" class="text-primary hover:underline text-sm">
+                Xem tất cả
+            </a>
+        </div>
+        
+        {% if recent_products %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b">
+                        <th class="text-left py-3 px-4 text-gray-600 font-medium">Ảnh</th>
+                        <th class="text-left py-3 px-4 text-gray-600 font-medium">Tên sản phẩm</th>
+                        <th class="text-left py-3 px-4 text-gray-600 font-medium">Giá gốc</th>
+                        <th class="text-left py-3 px-4 text-gray-600 font-medium">Giá KM</th>
+                        <th class="text-left py-3 px-4 text-gray-600 font-medium">Giảm giá</th>
+                        <th class="text-left py-3 px-4 text-gray-600 font-medium">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in recent_products %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-3 px-4">
+                            <img src="{{ product.main_image.url }}" 
+                                 alt="{{ product.name }}"
+                                 class="w-12 h-12 object-cover rounded-lg">
+                        </td>
+                        <td class="py-3 px-4">
+                            <a href="{% url 'product_detail' product.id %}" 
+                               class="text-primary hover:underline font-medium">
+                                {{ product.brand }} {{ product.name }}
+                            </a>
+                        </td>
+                        <td class="py-3 px-4 text-gray-500 line-through">
+                            {{ product.original_price|format_vnd }}
+                        </td>
+                        <td class="py-3 px-4 text-red-600 font-medium">
+                            {{ product.sale_price|format_vnd }}
+                        </td>
+                        <td class="py-3 px-4">
+                            {% if product.discount_percent > 0 %}
+                            <span class="bg-red-100 text-red-600 px-2 py-1 rounded text-sm font-medium">
+                                -{{ product.discount_percent }}%
+                            </span>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex gap-2">
+                                <a href="{% url 'admin_edit_product' product.id %}" 
+                                   class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition text-sm">
+                                    Sửa
+                                </a>
+                                <form method="POST" action="{% url 'admin_delete_product' product.id %}" 
+                                      onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?')">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                            class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition text-sm">
+                                        Xóa
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-gray-500">Chưa có sản phẩm nào.</p>
+            <a href="{% url 'admin_add_product' %}" 
+               class="text-primary hover:underline mt-2 inline-block">
+                Thêm sản phẩm đầu tiên
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Đánh giá gần đây -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">⭐ Đánh giá gần đây</h2>
+        
+        {% if recent_reviews %}
+        <div class="space-y-4">
+            {% for review in recent_reviews %}
+            <div class="flex items-start gap-4 p-4 border rounded-lg">
+                <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span class="text-lg font-medium text-gray-600">
+                        {{ review.user.username|upper|make_list|first }}
+                    </span>
+                </div>
+                <div class="flex-grow">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-medium">{{ review.user.username }}</span>
+                        <span class="text-yellow-400">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
+                            {% endfor %}
+                        </span>
+                    </div>
+                    <p class="text-gray-600 text-sm">{{ review.comment }}</p>
+                    <p class="text-gray-400 text-xs mt-1">
+                        {{ review.product.brand }} {{ review.product.name }} • {{ review.created_at|date:"d/m/Y H:i" }}
+                    </p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-gray-500">Chưa có đánh giá nào.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

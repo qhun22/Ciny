@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Thanh toán</h1>
+    
+    <form method="POST" action="{% url 'checkout_place_order' %}">
+        {% csrf_token %}
+        
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Cột trái: Địa chỉ & Thanh toán -->
+            <div class="lg:w-2/3 space-y-6">
+                
+                <!-- Địa chỉ giao hàng -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        📍 Địa chỉ giao hàng
+                    </h2>
+                    
+                    {% if default_address %}
+                    <!-- Hiển thị địa chỉ mặc định -->
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="bg-green-500 text-white text-xs px-2 py-0.5 rounded">Mặc định</span>
+                        </div>
+                        <p class="font-semibold">{{ default_address.full_name }}</p>
+                        <p class="text-gray-600">📞 {{ default_address.phone }}</p>
+                        <p class="text-gray-600">📍 {{ default_address.address }}</p>
+                    </div>
+                    
+                    <!-- Các trường ẩn để submit -->
+                    <input type="hidden" name="full_name" value="{{ default_address.full_name }}">
+                    <input type="hidden" name="phone" value="{{ default_address.phone }}">
+                    <input type="hidden" name="address" value="{{ default_address.address }}">
+                    {% else %}
+                    <!-- Chưa có địa chỉ -->
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-yellow-600 text-lg">⚠️</span>
+                            <span class="font-semibold text-yellow-700">Bạn chưa có địa chỉ giao hàng!</span>
+                        </div>
+                        <p class="text-gray-600 mb-3">Vui lòng thêm địa chỉ giao hàng trong trang cá nhân để tiếp tục.</p>
+                        <a href="{% url 'profile' %}" 
+                           class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                            ➕ Thêm địa chỉ trong Profile
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Nếu có nhiều địa chỉ, cho phép chọn -->
+                    {% if addresses and addresses.count > 1 %}
+                    <div class="mt-4">
+                        <label class="block text-gray-700 mb-2">Hoặc chọn địa chỉ khác:</label>
+                        <select name="address_id" class="w-full border border-gray-300 rounded-lg px-4 py-2"
+                                onchange="fillAddress(this.value)">
+                            <option value="">-- Chọn địa chỉ --</option>
+                            {% for addr in addresses %}
+                            <option value="{{ addr.id }}">{{ addr.full_name }} - {{ addr.address|truncatechars:50 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Phương thức thanh toán -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">💳 Phương thức thanh toán</h2>
+                    
+                    <div class="space-y-3">
+                        <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="payment_method" value="cod" checked
+                                   class="w-5 h-5 text-primary focus:ring-primary">
+                            <div class="ml-3">
+                                <span class="font-semibold">Thanh toán khi nhận hàng (COD)</span>
+                                <p class="text-sm text-gray-500">Bạn sẽ trả tiền mặt khi nhận được hàng</p>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition opacity-50">
+                            <input type="radio" name="payment_method" value="online" disabled
+                                   class="w-5 h-5 text-primary focus:ring-primary">
+                            <div class="ml-3">
+                                <span class="font-semibold">Thanh toán online</span>
+                                <p class="text-sm text-gray-500">Đang phát triển...</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Ghi chú -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">📝 Ghi chú</h2>
+                    <textarea name="note" rows="3"
+                              placeholder="Ghi chú về đơn hàng (tùy chọn)..."
+                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"></textarea>
+                </div>
+            </div>
+            
+            <!-- Cột phải: Tổng đơn hàng -->
+            <div class="lg:w-1/3">
+                <div class="bg-white rounded-xl shadow-md p-6 sticky top-4">
+                    <h2 class="text-xl font-semibold mb-4">📦 Đơn hàng của bạn</h2>
+                    
+                    <!-- Danh sách sản phẩm -->
+                    <div class="space-y-3 mb-4 max-h-64 overflow-y-auto">
+                        {% for item in cart_items %}
+                        <div class="flex items-center gap-3 py-2 border-b">
+                            <img src="{{ item.product.main_image.url }}" 
+                                 alt="{{ item.product.name }}"
+                                 class="w-12 h-12 object-cover rounded">
+                            <div class="flex-grow">
+                                <p class="font-medium text-sm">{{ item.product.brand }} {{ item.product.name }}</p>
+                                <p class="text-xs text-gray-500">
+                                    {% if item.storage %}{{ item.storage }} | {% endif %}
+                                    {% if item.color %}{{ item.color }} | {% endif %}
+                                    x{{ item.quantity }}
+                                </p>
+                            </div>
+                            <span class="font-semibold text-sm">{{ item.subtotal|format_vnd }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Tính tiền -->
+                    <div class="space-y-2 border-t pt-4">
+                        <div class="flex justify-between text-gray-600">
+                            <span>Tạm tính:</span>
+                            <span>{{ subtotal|format_vnd }}</span>
+                        </div>
+                        
+                        {% if coupon %}
+                        <div class="flex justify-between text-green-600">
+                            <span>Giảm giá ({{ coupon.code }}):</span>
+                            <span>-{{ discount_amount|format_vnd }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="flex justify-between text-2xl font-bold pt-2 border-t">
+                            <span>Tổng tiền:</span>
+                            <span class="text-red-600">{{ total|format_vnd }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Nút đặt hàng -->
+                    {% if default_address %}
+                    <button type="submit" 
+                            class="w-full py-4 bg-red-500 text-white rounded-xl font-semibold text-lg hover:bg-red-600 transition mt-6">
+                        📦 Đặt hàng
+                    </button>
+                    {% else %}
+                    <button type="button" disabled
+                            class="w-full py-4 bg-gray-300 text-gray-500 rounded-xl font-semibold text-lg cursor-not-allowed mt-6">
+                        Vui lòng thêm địa chỉ
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- JavaScript -->
+<script>
+    // Điền địa chỉ khi chọn từ dropdown
+    function fillAddress(addressId) {
+        if (!addressId) return;
+        
+        const addresses = [
+            {% for addr in addresses %}
+            {
+                id: {{ addr.id }},
+                full_name: "{{ addr.full_name }}",
+                phone: "{{ addr.phone }}",
+                address: "{{ addr.address|escapejs }}"
+            },
+            {% endfor %}
+        ];
+        
+        const selected = addresses.find(a => a.id == addressId);
+        if (selected) {
+            // Cập nhật hidden inputs
+            document.querySelector('input[name="full_name"]').value = selected.full_name;
+            document.querySelector('input[name="phone"]').value = selected.phone;
+            document.querySelector('input[name="address"]').value = selected.address;
+            
+            // Hiển thị thông báo
+            alert('Đã chọn địa chỉ: ' + selected.full_name);
+        }
+    }
+</script>
+{% endblock %}
+

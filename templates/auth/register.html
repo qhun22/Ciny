@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Đăng ký - QHUN22 Mobile{% endblock %}
+
+{% block content %}
+<div class="auth-form-container flex items-center justify-center py-12">
+    <div class="auth-card w-full max-w-md mx-4">
+        <!-- Card đăng ký -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-800 py-8 px-6 text-center">
+                <h1 class="text-2xl font-bold text-white">Đăng ký tài khoản</h1>
+                <p class="text-blue-100 mt-2">Tạo tài khoản để mua hàng dễ dàng hơn</p>
+            </div>
+
+            <!-- Form -->
+            <form method="POST" class="p-8" id="registerForm">
+                {% csrf_token %}
+
+                <!-- Họ và Tên -->
+                <div class="mb-4">
+                    <label for="full_name" class="block text-gray-700 font-medium mb-2">
+                        Họ và tên <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text"
+                           id="full_name"
+                           name="full_name"
+                           value="{{ request.POST.full_name|default:'' }}"
+                           placeholder="Nhập họ và tên của bạn"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                           required>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-4">
+                    <label for="email" class="block text-gray-700 font-medium mb-2">
+                        Email <span class="text-red-500">*</span>
+                    </label>
+                    <input type="email"
+                           id="email"
+                           name="email"
+                           value="{{ request.POST.email|default:'' }}"
+                           placeholder="Nhập email của bạn"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                           required>
+                </div>
+
+                <!-- Số điện thoại -->
+                <div class="mb-4">
+                    <label for="phone_number" class="block text-gray-700 font-medium mb-2">
+                        Số điện thoại <span class="text-red-500">*</span>
+                    </label>
+                    <input type="tel"
+                           id="phone_number"
+                           name="phone_number"
+                           value="{{ request.POST.phone_number|default:'' }}"
+                           placeholder="Nhập số điện thoại (10 số, bắt đầu bằng 0)"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                           required>
+                    {% if form.phone_number.errors %}
+                    <p class="text-sm text-red-500 mt-1">{{ form.phone_number.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Mật khẩu -->
+                <div class="mb-4">
+                    <label for="password1" class="block text-gray-700 font-medium mb-2">
+                        Mật khẩu <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password"
+                               id="password1"
+                               name="password1"
+                               placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
+                               required>
+                        <button type="button"
+                                onclick="togglePassword('password1')"
+                                tabindex="-1"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 focus:outline-none">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    {% if form.password1.errors %}
+                    <p class="text-sm text-red-500 mt-1">{{ form.password1.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Nhập lại mật khẩu -->
+                <div class="mb-6">
+                    <label for="password2" class="block text-gray-700 font-medium mb-2">
+                        Nhập lại mật khẩu <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password"
+                               id="password2"
+                               name="password2"
+                               placeholder="Nhập lại mật khẩu"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
+                               required>
+                        <button type="button"
+                                onclick="togglePassword('password2')"
+                                tabindex="-1"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 focus:outline-none">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    {% if form.password2.errors %}
+                    <p class="text-sm text-red-500 mt-1">{{ form.password2.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Submit button -->
+                <button type="submit"
+                        class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
+                    Đăng ký
+                </button>
+            </form>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 px-8 py-4 border-t border-gray-100">
+                <p class="text-center text-gray-600">
+                    Đã có tài khoản?
+                    <a href="{% url 'login' %}" class="text-blue-600 hover:text-blue-800 font-semibold">
+                        Đăng nhập
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toggle Password Script -->
+<script>
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    field.type = field.type === 'password' ? 'text' : 'password';
+}
+</script>
+{% endblock %}
