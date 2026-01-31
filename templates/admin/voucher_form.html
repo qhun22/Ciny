@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-max-width">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Left Sidebar -->
+            <div class="admin-sidebar">
+                <div class="admin-sidebar-card">
+                    <h2 class="admin-sidebar-title">Quản trị</h2>
+                    
+                    <!-- Bảng điều khiển -->
+                    <a href="{% url 'admin_dashboard' %}" 
+                       class="admin-sidebar-btn">
+                        Bảng điều khiển
+                    </a>
+                    
+                    <!-- Quản lý sản phẩm -->
+                    <a href="{% url 'admin_product_list' %}" 
+                       class="admin-sidebar-btn">
+                        📦 Quản lý sản phẩm
+                    </a>
+                    
+                    <!-- Quản lý đơn hàng -->
+                    <a href="{% url 'admin_orders' %}" 
+                       class="admin-sidebar-btn">
+                        🛒 Quản lý đơn hàng
+                    </a>
+                    
+                    <!-- Quản lý mã giảm giá -->
+                    <a href="{% url 'admin_vouchers' %}" 
+                       class="admin-sidebar-btn active">
+                        🎫 Quản lý voucher
+                    </a>
+                    
+                    <!-- Quản lý góp ý -->
+                    <a href="{% url 'admin_feedbacks' %}" 
+                       class="admin-sidebar-btn">
+                        💬 Quản lý góp ý
+                    </a>
+                    
+                    <!-- Quản lý người dùng -->
+                    <a href="{% url 'admin_users' %}" 
+                       class="admin-sidebar-btn">
+                        👥 Quản lý người dùng
+                    </a>
+                    
+                    <!-- Xem trang web -->
+                    <a href="{% url 'home' %}" 
+                       class="admin-sidebar-btn">
+                        🌐 Xem trang web
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Content -->
+            <div class="admin-content">
+                <!-- Header -->
+                <div class="admin-header">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="admin-title">{% if voucher %}✏️ Chỉnh sửa voucher{% else %}➕ Thêm voucher mới{% endif %}</h1>
+                        </div>
+                        <a href="{% url 'admin_vouchers' %}" class="btn-edit" style="background-color: #6b7280;">
+                            ← Quay lại
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Form -->
+                <div class="admin-card">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Mã voucher -->
+                            <div>
+                                <label class="block text-gray-700 mb-2">Mã voucher *</label>
+                                <input type="text" name="code" 
+                                       value="{{ voucher.code|default:'' }}" required
+                                       placeholder="Ví dụ: SUMMER2024"
+                                       class="admin-input" style="text-transform: uppercase;">
+                            </div>
+                            
+                            <!-- Loại giảm giá -->
+                            <div>
+                                <label class="block text-gray-700 mb-2">Loại giảm giá *</label>
+                                <select name="discount_type" class="admin-input">
+                                    <option value="percent" {% if voucher.discount_type == 'percent' %}selected{% endif %}>Phần trăm (%)</option>
+                                    <option value="fixed" {% if voucher.discount_type == 'fixed' %}selected{% endif %}>Tiền cố định (đ)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Mô tả -->
+                        <div class="mt-4">
+                            <label class="block text-gray-700 mb-2">Mô tả</label>
+                            <textarea name="description" rows="3"
+                                      placeholder="Nhập mô tả voucher..."
+                                      class="admin-input">{{ voucher.description|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <!-- Giá trị giảm -->
+                            <div>
+                                <label class="block text-gray-700 mb-2">Giá trị giảm *</label>
+                                <input type="number" name="discount_value" 
+                                       value="{{ voucher.discount_value|default:0 }}" required
+                                       min="0"
+                                       placeholder="Nhập giá trị giảm"
+                                       class="admin-input">
+                            </div>
+                            
+                            <!-- Giá trị đơn tối thiểu -->
+                            <div>
+                                <label class="block text-gray-700 mb-2">Giá trị đơn tối thiểu</label>
+                                <input type="number" name="min_order_amount" 
+                                       value="{{ voucher.min_order_amount|default:0 }}" required
+                                       min="0"
+                                       placeholder="Nhập giá trị tối thiểu"
+                                       class="admin-input">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <!-- Hạn sử dụng -->
+                            <div>
+                                <label class="block text-gray-700 mb-2">Hạn sử dụng</label>
+                                <input type="datetime-local" name="expires_at"
+                                       value="{{ voucher.expires_at|date:'Y-m-d H:i' if voucher.expires_at else '' }}"
+                                       class="admin-input">
+                            </div>
+                            
+                            <!-- Trạng thái -->
+                            <div>
+                                <label class="block text-gray-700 mb-2">Trạng thái</label>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <input type="checkbox" name="is_active" id="is_active"
+                                           {% if voucher.is_active or not voucher %}checked{% endif %}
+                                           class="w-4 h-4">
+                                    <label for="is_active" class="text-gray-700">Hoạt động</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Nút hành động -->
+                        <div class="flex gap-4 mt-6">
+                            <button type="submit" class="btn-edit" style="background-color: #16a34a;">
+                                {% if voucher %}💾 Lưu thay đổi{% else %}➕ Tạo voucher{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

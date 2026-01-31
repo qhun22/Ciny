@@ -359,7 +359,7 @@ def admin_add_product(request):
         
         # Các trường còn lại
         warranty_months = request.POST.get('warranty_months', 12)
-        youtube_id = request.POST.get('youtube_id', '')
+        stock_quantity = int(request.POST.get('stock_quantity', 0))
         free_shipping = 'free_shipping' in request.POST
         open_box_check = 'open_box_check' in request.POST
         return_30_days = 'return_30_days' in request.POST
@@ -375,7 +375,7 @@ def admin_add_product(request):
             sale_price=sale_price_val,
             discount_percent=discount_percent_val,
             warranty_months=warranty_months,
-            youtube_id=youtube_id,
+            stock_quantity=stock_quantity,
             free_shipping=free_shipping,
             open_box_check=open_box_check,
             return_30_days=return_30_days,
@@ -669,21 +669,43 @@ def voucher_delete(request):
 @user_passes_test(is_admin)
 def admin_dashboard(request):
     """
-    Trang admin chính thức (q    Dashboard quản lý chun22.html).
-ửa hàng.
+    Trang admin chinh thuc (Dashboard quan ly - qhun22.html).
+    Hien thi thong ke va quan ly cua hang.
     """
-    # Thống kê tổng quan
+    # Thong ke tong quan
     total_products = Product.objects.count()
     total_users = User.objects.count()
     total_reviews = Review.objects.count()
     total_coupons = Coupon.objects.count()
     total_orders = Order.objects.count()
     
-    # Sản phẩm gần đây
+    # Tong doanh thu (chi don hang thanh cong)
+    total_revenue = Order.objects.filter(status='completed').aggregate(
+        total=models.Sum('total')
+    )['total'] or 0
+    
+    # Thong ke theo thang hien tai
+    from django.utils import timezone
+    now = timezone.now()
+    first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # Nguoi dung moi thang nay
+    monthly_new_users = User.objects.filter(date_joined__gte=first_day_of_month).count()
+    
+    # Don hang thang nay
+    monthly_orders = Order.objects.filter(created_at__gte=first_day_of_month).count()
+    
+    # Doanh thu thang nay (chi don hang thanh cong)
+    monthly_revenue = Order.objects.filter(
+        status='completed',
+        created_at__gte=first_day_of_month
+    ).aggregate(total=models.Sum('total'))['total'] or 0
+    
+    # San pham gan day
     recent_products = Product.objects.all().order_by('-created_at')[:5]
     
-    # Đánh giá gần đây
-    recent_reviews = Review.objects.all().order_by('-created_at')[:5]
+    # Don hang gan day
+    recent_orders = Order.objects.all().order_by('-created_at')[:5]
     
     context = {
         'total_products': total_products,
@@ -691,9 +713,13 @@ def admin_dashboard(request):
         'total_reviews': total_reviews,
         'total_coupons': total_coupons,
         'total_orders': total_orders,
+        'total_revenue': total_revenue,
+        'monthly_new_users': monthly_new_users,
+        'monthly_orders': monthly_orders,
+        'monthly_revenue': monthly_revenue,
         'recent_products': recent_products,
-        'recent_reviews': recent_reviews,
-        'page_title': 'Trang quản trị - PhoneShop',
+        'recent_orders': recent_orders,
+        'page_title': 'Trang quan tri - PhoneShop',
     }
     
     return render(request, 'admin/qhun22.html', context)
@@ -721,6 +747,9 @@ def admin_edit_product(request, product_id):
     Trang chỉnh sửa sản phẩm (chỉ admin).
     Hiển thị thông tin hiện có và cho phép cập nhật.
     """
+    import os
+    from django.conf import settings
+    
     product = get_object_or_404(Product, id=product_id)
     
     if request.method == 'POST':
@@ -739,19 +768,59 @@ def admin_edit_product(request, product_id):
         product.sale_price = sale_price
         product.discount_percent = discount_percent
         product.warranty_months = request.POST.get('warranty_months', 12)
-        product.youtube_id = request.POST.get('youtube_id', '')
+        product.stock_quantity = int(request.POST.get('stock_quantity', 0))
         
         # Checkbox values
         product.free_shipping = 'free_shipping' in request.POST
         product.open_box_check = 'open_box_check' in request.POST
         product.return_30_days = 'return_30_days' in request.POST
         
+        # Xoa anh chinh neu duoc danh dau
+        delete_main_image = request.POST.get('delete_main_image') == 'true'
+        if delete_main_image:
+            # Xoa file cu
+            if product.main_image:
+                try:
+                    old_path = os.path.join(settings.MEDIA_ROOT, str(product.main_image))
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                except:
+                    pass
+            product.main_image = None
+        
         # Upload anh chinh moi neu co
         new_main_image = request.FILES.get('main_image')
         if new_main_image:
+            # Xoa file cu neu co
+            if product.main_image:
+                try:
+                    old_path = os.path.join(settings.MEDIA_ROOT, str(product.main_image))
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                except:
+                    pass
             product.main_image = new_main_image
         
         product.save()
+        
+        # Xoa anh chi tiet duoc danh dau
+        delete_images_str = request.POST.get('delete_images', '').strip()
+        if delete_images_str:
+            delete_image_ids = [int(x) for x in delete_images_str.split(',') if x]
+            for img_id in delete_image_ids:
+                try:
+                    img = ProductImage.objects.get(id=img_id, product=product)
+                    # Xoa file
+                    if img.image:
+                        try:
+                            img_path = os.path.join(settings.MEDIA_ROOT, str(img.image))
+                            if os.path.exists(img_path):
+                                os.remove(img_path)
+                        except:
+                            pass
+                    img.delete()
+                except ProductImage.DoesNotExist:
+                    pass
         
         # Xu ly anh chi tiet moi
         new_detail_images = request.FILES.getlist('detail_images')
@@ -759,11 +828,40 @@ def admin_edit_product(request, product_id):
             if image:
                 ProductImage.objects.create(product=product, image=image)
         
-        # Xoa cac tuy chon cu va tao moi
-        StorageOption.objects.filter(product=product).delete()
-        ColorOption.objects.filter(product=product).delete()
+        # Xoa storage duoc danh dau
+        delete_storages_str = request.POST.get('delete_storages', '').strip()
+        if delete_storages_str:
+            delete_storage_ids = [int(x) for x in delete_storages_str.split(',') if x]
+            StorageOption.objects.filter(id__in=delete_storage_ids, product=product).delete()
         
-        # Them tuy chon bo nho (voi gia goc)
+        # Xoa color duoc danh dau
+        delete_colors_str = request.POST.get('delete_colors', '').strip()
+        if delete_colors_str:
+            delete_color_ids = [int(x) for x in delete_colors_str.split(',') if x]
+            for color_id in delete_color_ids:
+                try:
+                    color = ColorOption.objects.get(id=color_id, product=product)
+                    # Xoa file anh mau
+                    if color.color_image:
+                        try:
+                            color_path = os.path.join(settings.MEDIA_ROOT, str(color.color_image))
+                            if os.path.exists(color_path):
+                                os.remove(color_path)
+                        except:
+                            pass
+                    color.delete()
+                except ColorOption.DoesNotExist:
+                    pass
+        
+        # Lay danh sach ID cua storage bi danh dau xoa
+        delete_storages_str = request.POST.get('delete_storages', '').strip()
+        deleted_storage_ids = [int(x) for x in delete_storages_str.split(',')] if delete_storages_str else []
+        
+        # Xoa storage danh dau xoa
+        if deleted_storage_ids:
+            StorageOption.objects.filter(id__in=deleted_storage_ids, product=product).delete()
+        
+        # Them storage moi tu form (chi nhung dong co ten)
         storage_names = request.POST.getlist('storage_name[]')
         storage_prices = request.POST.getlist('storage_price[]')
         for i in range(len(storage_names)):
@@ -774,7 +872,10 @@ def admin_edit_product(request, product_id):
                     original_price=storage_prices[i] if i < len(storage_prices) else 0,
                 )
         
-        # Them tuy chon mau sac
+        # Lay danh sach ID cua color bi danh dau xoa
+        deleted_color_ids = [int(x) for x in delete_colors_str.split(',')] if delete_colors_str else []
+        
+        # Them color moi tu form (chi nhung dong co ten)
         color_names = request.POST.getlist('color_name[]')
         color_images = request.FILES.getlist('color_image[]')
         for i in range(len(color_names)):
@@ -785,8 +886,8 @@ def admin_edit_product(request, product_id):
                     color_image=color_images[i] if i < len(color_images) and color_images[i] else None,
                 )
         
-        messages.success(request, f'Da cap nhat san pham "{product.name}" thanh cong!')
-        return redirect('admin_product_list')
+        messages.success(request, f"Da cap nhat san pham \"{product.name}\" thanh cong!")
+        return redirect('admin_edit_product', product_id=product.id)
     
     context = {
         'product': product,
@@ -810,43 +911,62 @@ def admin_delete_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     product_name = product.name
     
+    print(f"===== Dang xoa san pham: {product_name} (ID: {product_id}) =====")
+    
     # Xoa file anh chinh
     if product.main_image:
         try:
             main_image_path = os.path.join(settings.MEDIA_ROOT, str(product.main_image))
+            print(f"Xoa anh chinh: {main_image_path}")
             if os.path.exists(main_image_path):
                 os.remove(main_image_path)
+                print(f"  -> Da xoa anh chinh")
+            else:
+                print(f"  -> Khong tim thay file: {main_image_path}")
         except Exception as e:
             print(f"Loi xoa anh chinh: {e}")
     
     # Xoa cac anh chi tiet va file
+    print(f"Xoa anh chi tiet (gallery)...")
     for img in product.images.all():
         if img.image:
             try:
                 img_path = os.path.join(settings.MEDIA_ROOT, str(img.image))
+                print(f"  Xoa: {img_path}")
                 if os.path.exists(img_path):
                     os.remove(img_path)
+                    print(f"    -> Da xoa")
+                else:
+                    print(f"    -> Khong tim thay file")
             except Exception as e:
-                print(f"Loi xoa anh chi tiet: {e}")
+                print(f"Loi xoa anh chi tiet {img.id}: {e}")
     
     # Xoa cac anh mau sac va file
+    print(f"Xoa anh mau sac...")
     for color in product.color_options.all():
         if color.color_image:
             try:
                 color_path = os.path.join(settings.MEDIA_ROOT, str(color.color_image))
+                print(f"  Mau: {color.color_name} - File: {color_path}")
                 if os.path.exists(color_path):
                     os.remove(color_path)
+                    print(f"    -> Da xoa")
+                else:
+                    print(f"    -> Khong tim thay file")
             except Exception as e:
-                print(f"Loi xoa anh mau: {e}")
+                print(f"Loi xoa anh mau {color.id}: {e}")
     
     # Xoa cac ban ghi lien quan
+    print(f"Xoa ban ghi database...")
     product.images.all().delete()
     product.storage_options.all().delete()
     product.color_options.all().delete()
     product.reviews.all().delete()
+    print(f"  -> Da xoa images, storage_options, color_options, reviews")
     
     # Xoa san pham
     product.delete()
+    print(f"  -> Da xoa san pham")
     
     messages.success(request, f'Da xoa san pham "{product_name}" thanh cong!')
     return redirect('admin_product_list')
@@ -1414,4 +1534,267 @@ def feedback_list(request):
     } for f in feedbacks]
     
     return JsonResponse({'feedbacks': data})
+
+
+# ==================== ADMIN MANAGEMENT VIEWS ====================
+
+@user_passes_test(is_admin)
+def admin_orders(request):
+    """
+    Trang quản lý đơn hàng (admin).
+    """
+    orders = Order.objects.all().prefetch_related('items').order_by('-created_at')
+    
+    context = {
+        'orders': orders,
+        'page_title': 'Quản lý đơn hàng - Admin',
+    }
+    
+    return render(request, 'admin/orders.html', context)
+
+
+@user_passes_test(is_admin)
+def admin_order_detail(request, order_id):
+    """
+    Trang chi tiết đơn hàng (admin).
+    """
+    order = get_object_or_404(Order, id=order_id)
+    order_items = order.items.all()
+    
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        if new_status:
+            order.status = new_status
+            order.save()
+            messages.success(request, 'Cập nhật trạng thái đơn hàng thành công!')
+            return redirect('admin_order_detail', order_id=order_id)
+    
+    context = {
+        'order': order,
+        'order_items': order_items,
+        'page_title': f'Đơn hàng #{order.id} - Admin',
+    }
+    
+    return render(request, 'admin/order_detail.html', context)
+
+
+@user_passes_test(is_admin)
+def admin_vouchers(request):
+    """
+    Trang quản lý voucher (admin).
+    """
+    vouchers = Coupon.objects.all().order_by('-created_at')
+    
+    context = {
+        'vouchers': vouchers,
+        'page_title': 'Quản lý voucher - Admin',
+    }
+    
+    return render(request, 'admin/vouchers.html', context)
+
+
+@user_passes_test(is_admin)
+def admin_voucher_add(request):
+    """
+    Trang thêm voucher mới (admin).
+    """
+    if request.method == 'POST':
+        code = request.POST.get('code', '').strip().upper()
+        description = request.POST.get('description', '').strip()
+        discount_type = request.POST.get('discount_type')
+        discount_value = request.POST.get('discount_value', '0')
+        min_order_amount = request.POST.get('min_order_amount', '0')
+        expires_at = request.POST.get('expires_at')
+        is_active = request.POST.get('is_active') == 'on'
+        
+        if code and discount_value:
+            Coupon.objects.create(
+                code=code,
+                description=description,
+                discount_type=discount_type,
+                discount_value=discount_value,
+                min_order_amount=min_order_amount,
+                expires_at=expires_at if expires_at else None,
+                is_active=is_active
+            )
+            messages.success(request, 'Tạo voucher thành công!')
+            return redirect('admin_vouchers')
+        else:
+            messages.error(request, 'Vui lòng nhập đầy đủ thông tin!')
+    
+    context = {
+        'page_title': 'Thêm voucher mới - Admin',
+    }
+    
+    return render(request, 'admin/voucher_form.html', context)
+
+
+@user_passes_test(is_admin)
+def admin_voucher_edit(request, voucher_id):
+    """
+    Trang chỉnh sửa voucher (admin).
+    """
+    voucher = get_object_or_404(Coupon, id=voucher_id)
+    
+    if request.method == 'POST':
+        voucher.code = request.POST.get('code', '').strip().upper()
+        voucher.description = request.POST.get('description', '').strip()
+        voucher.discount_type = request.POST.get('discount_type')
+        voucher.discount_value = request.POST.get('discount_value', '0')
+        voucher.min_order_amount = request.POST.get('min_order_amount', '0')
+        expires_at = request.POST.get('expires_at')
+        voucher.expires_at = expires_at if expires_at else None
+        voucher.is_active = request.POST.get('is_active') == 'on'
+        voucher.save()
+        messages.success(request, 'Cập nhật voucher thành công!')
+        return redirect('admin_vouchers')
+    
+    context = {
+        'voucher': voucher,
+        'page_title': 'Chỉnh sửa voucher - Admin',
+    }
+    
+    return render(request, 'admin/voucher_form.html', context)
+
+
+@user_passes_test(is_admin)
+def admin_voucher_delete(request, voucher_id):
+    """
+    Xóa voucher (admin).
+    """
+    voucher = get_object_or_404(Coupon, id=voucher_id)
+    voucher.delete()
+    messages.success(request, 'Xóa voucher thành công!')
+    return redirect('admin_vouchers')
+
+
+@user_passes_test(is_admin)
+def admin_feedbacks(request):
+    """
+    Trang quản lý góp ý (admin).
+    """
+    feedbacks = Feedback.objects.all().order_by('-created_at')
+    
+    if request.method == 'POST':
+        feedback_id = request.POST.get('feedback_id')
+        admin_response = request.POST.get('admin_response', '').strip()
+        
+        if feedback_id and admin_response:
+            feedback = get_object_or_404(Feedback, id=feedback_id)
+            feedback.admin_response = admin_response
+            feedback.responded_at = timezone.now()
+            feedback.save()
+            messages.success(request, 'Phản hồi góp ý thành công!')
+        
+        return redirect('admin_feedbacks')
+    
+    context = {
+        'feedbacks': feedbacks,
+        'page_title': 'Quản lý góp ý - Admin',
+    }
+    
+    return render(request, 'admin/feedbacks.html', context)
+
+
+@user_passes_test(is_admin)
+def admin_users(request):
+    """
+    Trang quản lý người dùng (admin) - có phân trang và tìm kiếm.
+    """
+    from django.core.paginator import Paginator
+    
+    query = request.GET.get('q', '').strip()
+    
+    users = User.objects.all().order_by('-date_joined')
+    
+    # Tìm kiếm theo username, email, số điện thoại
+    if query:
+        users = users.filter(
+            models.Q(username__icontains=query) |
+            models.Q(email__icontains=query) |
+            models.Q(profile__phone_number__icontains=query)
+        )
+    
+    # Phân trang - 5 người dùng mỗi trang
+    paginator = Paginator(users, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'users': page_obj,
+        'page_title': 'Quản lý người dùng - Admin',
+        'query': query,
+    }
+    
+    return render(request, 'admin/users.html', context)
+
+
+@user_passes_test(is_admin)
+def admin_user_detail(request, user_id):
+    """
+    Trang chi tiết người dùng (admin) - xem và chỉnh sửa thông tin.
+    """
+    user = get_object_or_404(User, id=user_id)
+    
+    # Lấy thông tin profile
+    try:
+        profile = user.profile
+    except:
+        profile = None
+    
+    # Lấy địa chỉ mặc định
+    default_address = user.shipping_addresses.filter(is_default=True).first()
+    addresses = user.shipping_addresses.all()
+    
+    # Lấy đơn hàng gần đây (sử dụng related_name='orders')
+    orders = user.orders.all().order_by('-created_at')[:10]
+    
+    # Lấy voucher (sử dụng related_name='user_vouchers')
+    user_vouchers = user.user_vouchers.all().select_related('coupon')
+    
+    if request.method == 'POST':
+        # Cập nhật thông tin user
+        user.first_name = request.POST.get('first_name', '').strip()
+        user.last_name = request.POST.get('last_name', '').strip()
+        user.email = request.POST.get('email', '').strip()
+        user.is_active = request.POST.get('is_active') == 'on'
+        user.save()
+        
+        # Cập nhật phone nếu có profile
+        if profile:
+            phone = request.POST.get('phone', '').strip()
+            profile.phone_number = phone
+            profile.save()
+        
+        messages.success(request, 'Cập nhật thông tin người dùng thành công!')
+        return redirect('admin_user_detail', user_id=user_id)
+    
+    context = {
+        'user': user,
+        'profile': profile,
+        'default_address': default_address,
+        'addresses': addresses,
+        'orders': orders,
+        'user_vouchers': user_vouchers,
+        'page_title': f'Người dùng: {user.username} - Admin',
+    }
+    
+    return render(request, 'admin/user_detail.html', context)
+
+
+@user_passes_test(is_admin)
+def admin_user_delete(request, user_id):
+    """
+    Xóa người dùng (admin).
+    """
+    user = get_object_or_404(User, id=user_id)
+    
+    # Không cho phép xóa admin
+    if user.is_superuser:
+        messages.error(request, 'Không thể xóa tài khoản admin!')
+    else:
+        user.delete()
+        messages.success(request, 'Xóa người dùng thành công!')
+    
+    return redirect('admin_users')
 

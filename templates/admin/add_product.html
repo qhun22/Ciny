@@ -5,157 +5,168 @@
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto">
-        <!-- Tiêu đề -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Thêm sản phẩm mới</h1>
-            <p class="text-gray-500 mt-2">Điền thông tin sản phẩm vào form bên dưới</p>
+        <!-- Header with back button -->
+        <div class="mb-8 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Them san pham moi</h1>
+                <p class="text-gray-500 mt-2">Dien thong tin san pham vao form ben duoi</p>
+            </div>
+            <a href="{% url 'admin_product_list' %}" 
+               class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">
+                Quay lai
+            </a>
         </div>
 
-        <!-- Form thêm sản phẩm -->
+        <!-- Form them san pham -->
         <form method="POST" enctype="multipart/form-data" class="space-y-8">
             {% csrf_token %}
 
-            <!-- Thông tin cơ bản -->
+            <!-- Thong tin co ban -->
             <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">📱 Thông tin cơ bản</h2>
+                <h2 class="text-xl font-semibold mb-4">Thong tin co ban</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Hãng sản xuất -->
+                    <!-- Hang san xuat -->
                     <div>
-                        <label class="block text-gray-700 mb-2">Hãng sản xuất *</label>
+                        <label class="block text-gray-700 mb-2">Hang san xuat *</label>
                         <input type="text" name="brand" required
-                               placeholder="Ví dụ: Apple, Samsung, Xiaomi"
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
+                               placeholder="Vi du: Apple, Samsung, Xiaomi"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
                     </div>
                     
-                    <!-- Tên sản phẩm -->
+                    <!-- Ten san pham -->
                     <div>
-                        <label class="block text-gray-700 mb-2">Tên sản phẩm *</label>
+                        <label class="block text-gray-700 mb-2">Ten san pham *</label>
                         <input type="text" name="name" required
-                               placeholder="Ví dụ: iPhone 15 Pro Max"
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
+                               placeholder="Vi du: iPhone 15 Pro Max"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
                     </div>
                 </div>
                 
-                <!-- Ảnh chính -->
+                <!-- Anh chinh -->
                 <div class="mt-4">
-                    <label class="block text-gray-700 mb-2">Ảnh chính *</label>
+                    <label class="block text-gray-700 mb-2">Anh chinh *</label>
                     <input type="file" name="main_image" accept="image/*" required
-                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                    <p class="text-sm text-gray-500 mt-1">Ảnh này sẽ hiển thị trong danh sách sản phẩm</p>
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                    <p class="text-sm text-gray-500 mt-1">Anh nay se hien thi trong danh sach san pham</p>
                 </div>
             </div>
 
-            <!-- Giá cả -->
+            <!-- Gia ca -->
             <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">💰 Thông tin giá cả</h2>
+                <h2 class="text-xl font-semibold mb-4">Thong tin gia ca</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Giá gốc -->
+                    <!-- Gia goc -->
                     <div>
-                        <label class="block text-gray-700 mb-2">Giá gốc (VNĐ) *</label>
+                        <label class="block text-gray-700 mb-2">Gia goc (VND) *</label>
                         <input type="number" name="original_price" min="0" required
-                               placeholder="Ví dụ: 30000000"
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
+                               placeholder="Vi du: 30000000"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
                     </div>
                     
-                    <!-- Phần trăm giảm giá -->
+                    <!-- Phan tram giam gia -->
                     <div>
-                        <label class="block text-gray-700 mb-2">Phần trăm giảm giá (%) *</label>
+                        <label class="block text-gray-700 mb-2">Phan tram giam gia (%) *</label>
                         <input type="number" name="discount_percent" min="0" max="100" step="0.1" required
-                               placeholder="Ví dụ: 13.8"
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                        <p class="text-sm text-gray-500 mt-1">Giá sẽ được tính tự động (VD: 13.8)</p>
+                               placeholder="Vi du: 13.8"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                        <p class="text-sm text-gray-500 mt-1">Gia se duoc tinh tu dong (VD: 13.8)</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Thông tin bảo hành và đặc điểm -->
+            <!-- Ton kho -->
             <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">🛡️ Bảo hành và đặc điểm</h2>
+                <h2 class="text-xl font-semibold mb-4">Ton kho</h2>
                 
-                <!-- Thời gian bảo hành -->
+                <div>
+                    <label class="block text-gray-700 mb-2">So luong ton kho *</label>
+                    <input type="number" name="stock_quantity" min="0" value="0" required
+                           placeholder="Vi du: 100"
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                    <p class="text-sm text-gray-500 mt-1">So luong san pham con lai trong kho</p>
+                </div>
+            </div>
+
+            <!-- Thong tin bao hanh va dac diem -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4">Bao hanh va dac diem</h2>
+                
+                <!-- Thoi gian bao hanh -->
                 <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Thời gian bảo hành (tháng)</label>
+                    <label class="block text-gray-700 mb-2">Thoi gian bao hanh (thang)</label>
                     <input type="number" name="warranty_months" min="0" value="12"
-                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
                 </div>
                 
                 <!-- Checkboxes -->
                 <div class="flex flex-wrap gap-4">
                     <label class="flex items-center cursor-pointer">
                         <input type="checkbox" name="free_shipping" 
-                               class="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary">
-                        <span class="ml-2">Miễn phí giao hàng</span>
+                               class="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="ml-2">Mien phi giao hang</span>
                     </label>
                     
                     <label class="flex items-center cursor-pointer">
                         <input type="checkbox" name="open_box_check"
-                               class="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary">
-                        <span class="ml-2">Mở hộp kiểm tra</span>
+                               class="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="ml-2">Mo hop kiem tra</span>
                     </label>
                     
                     <label class="flex items-center cursor-pointer">
                         <input type="checkbox" name="return_30_days"
-                               class="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary">
-                        <span class="ml-2">Đổi trả trong 30 ngày</span>
+                               class="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="ml-2">Doi tra trong 30 ngay</span>
                     </label>
                 </div>
                 
-                <!-- YouTube ID -->
-                <div class="mt-4">
-                    <label class="block text-gray-700 mb-2">ID Video YouTube</label>
-                    <input type="text" name="youtube_id"
-                           placeholder="Ví dụ: dQw4w9WgXcQ (lấy phần cuối của URL)"
-                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                    <p class="text-sm text-gray-500 mt-1">Nhập ID video để hiển thị video đánh giá trong trang chi tiết</p>
-                </div>
             </div>
 
-            <!-- Mô tả và thông số kỹ thuật -->
+            <!-- Mo ta va thong so ky thuat -->
             <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">📝 Mô tả và thông số kỹ thuật</h2>
+                <h2 class="text-xl font-semibold mb-4">Mo ta va thong so ky thuat</h2>
                 
-                <!-- Mô tả sản phẩm -->
+                <!-- Mo ta san pham -->
                 <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Mô tả sản phẩm *</label>
+                    <label class="block text-gray-700 mb-2">Mo ta san pham *</label>
                     <textarea name="description" rows="5" required
-                              placeholder="Nhập mô tả chi tiết về sản phẩm..."
-                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"></textarea>
+                              placeholder="Nhap mo ta chi tiet ve san pham..."
+                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"></textarea>
                 </div>
                 
-                <!-- Thông số kỹ thuật -->
+                <!-- Thong so ky thuat -->
                 <div>
-                    <label class="block text-gray-700 mb-2">Thông số kỹ thuật *</label>
+                    <label class="block text-gray-700 mb-2">Thong so ky thuat *</label>
                     <textarea name="specifications" rows="5" required
-                              placeholder="Nhập thông số kỹ thuật..."
-                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"></textarea>
+                              placeholder="Nhap thong so ky thuat..."
+                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"></textarea>
                 </div>
             </div>
 
-            <!-- Hình ảnh chi tiết -->
+            <!-- Hinh anh chi tiet -->
             <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">🖼️ Hình ảnh chi tiết</h2>
+                <h2 class="text-xl font-semibold mb-4">Hinh anh chi tiet</h2>
                 
-                <label class="block text-gray-700 mb-2">Chọn nhiều ảnh chi tiết</label>
+                <label class="block text-gray-700 mb-2">Chon nhieu anh chi tiet</label>
                 <input type="file" name="detail_images" accept="image/*" multiple
-                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                <p class="text-sm text-gray-500 mt-1">Có thể chọn nhiều ảnh cùng lúc</p>
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+                <p class="text-sm text-gray-500 mt-1">Co the chon nhieu anh cung luc</p>
             </div>
 
             <!-- Tuy chon bo nho -->
             <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">💾 Tuy chon bo nho</h2>
+                <h2 class="text-xl font-semibold mb-4">Tuy chon bo nho</h2>
                 <p class="text-gray-500 mb-4">Them cac phien ban bo nho khac nhau</p>
                 
                 <div id="storageContainer" class="space-y-3">
                     <!-- Dong dau tien -->
                     <div class="flex gap-3 storage-row">
                         <input type="text" name="storage_name[]" placeholder="Vi du: 128GB"
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
+                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
                         <input type="number" name="storage_price[]" placeholder="Gia goc (VND)"
                                min="0" value="0"
-                               class="w-48 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
+                               class="w-48 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
                         <button type="button" onclick="addStorageRow()"
                                 class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
                             +
@@ -164,23 +175,23 @@
                 </div>
                 
                 <button type="button" onclick="addStorageRow()"
-                        class="mt-4 text-primary hover:underline">
+                        class="mt-4 text-blue-500 hover:underline">
                     + Them tuy chon bo nho
                 </button>
             </div>
 
-            <!-- Tùy chọn màu sắc -->
+            <!-- Tuy chon mau sac -->
             <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">🎨 Tùy chọn màu sắc</h2>
-                <p class="text-gray-500 mb-4">Thêm các màu sắc có sẵn cho sản phẩm</p>
+                <h2 class="text-xl font-semibold mb-4">Tuy chon mau sac</h2>
+                <p class="text-gray-500 mb-4">Them cac mau sac co san cho san pham</p>
                 
                 <div id="colorContainer" class="space-y-3">
-                    <!-- Dòng đầu tiên -->
+                    <!-- Dong dau tien -->
                     <div class="flex gap-3 color-row">
-                        <input type="text" name="color_name[]" placeholder="Ví dụ: Midnight Black"
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
+                        <input type="text" name="color_name[]" placeholder="Vi du: Midnight Black"
+                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
                         <input type="file" name="color_image[]" accept="image/*"
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
+                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
                         <button type="button" onclick="addColorRow()"
                                 class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
                             +
@@ -189,24 +200,23 @@
                 </div>
                 
                 <button type="button" onclick="addColorRow()"
-                        class="mt-4 text-primary hover:underline">
-                    + Thêm tùy chọn màu sắc
+                        class="mt-4 text-blue-500 hover:underline">
+                    + Them tuy chon mau sac
                 </button>
             </div>
 
-            <!-- Nút submit -->
+            <!-- Nut submit -->
             <div class="flex justify-end gap-4">
-                <a href="{% url 'home' %}" 
+                <a href="{% url 'admin_product_list' %}" 
                    class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
-                    Hủy
+                    Huy
                 </a>
                 <button type="submit" 
-                        class="px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-blue-600 transition">
-                    Thêm sản phẩm
+                        class="px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition">
+                    Them san pham
                 </button>
             </div>
         </form>
     </div>
 </div>
 {% endblock %}
-

@@ -98,5 +98,23 @@ urlpatterns = [
     
     # Góp ý
     path('profile/feedback/create/', views.feedback_create, name='feedback_create'),
+    
+    # Admin - Quản lý đơn hàng
+    path('qhun22/orders/', views.admin_orders, name='admin_orders'),
+    path('qhun22/orders/<int:order_id>/', views.admin_order_detail, name='admin_order_detail'),
+    
+    # Admin - Quản lý voucher
+    path('qhun22/vouchers/', views.admin_vouchers, name='admin_vouchers'),
+    path('qhun22/vouchers/add/', views.admin_voucher_add, name='admin_voucher_add'),
+    path('qhun22/vouchers/<int:voucher_id>/edit/', views.admin_voucher_edit, name='admin_voucher_edit'),
+    path('qhun22/vouchers/<int:voucher_id>/delete/', views.admin_voucher_delete, name='admin_voucher_delete'),
+    
+    # Admin - Quản lý góp ý
+    path('qhun22/feedbacks/', views.admin_feedbacks, name='admin_feedbacks'),
+    
+    # Admin - Quản lý người dùng
+    path('qhun22/users/', views.admin_users, name='admin_users'),
+    path('qhun22/users/<int:user_id>/', views.admin_user_detail, name='admin_user_detail'),
+    path('qhun22/users/<int:user_id>/delete/', views.admin_user_delete, name='admin_user_delete'),
 ]
 

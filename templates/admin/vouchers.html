@@ -25,7 +25,7 @@
                     
                     <!-- Quản lý sản phẩm -->
                     <a href="{% url 'admin_product_list' %}" 
-                       class="admin-sidebar-btn active">
+                       class="admin-sidebar-btn">
                         📦 Quản lý sản phẩm
                     </a>
                     
@@ -37,7 +37,7 @@
                     
                     <!-- Quản lý mã giảm giá -->
                     <a href="{% url 'admin_vouchers' %}" 
-                       class="admin-sidebar-btn">
+                       class="admin-sidebar-btn active">
                         🎫 Quản lý voucher
                     </a>
                     
@@ -67,83 +67,68 @@
                 <div class="admin-header">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h1 class="admin-title">📦 Quản lý sản phẩm</h1>
-                            <p class="admin-subtitle">Xem, chỉnh sửa và xóa sản phẩm</p>
+                            <h1 class="admin-title">🎫 Quản lý voucher</h1>
+                            <p class="admin-subtitle">Tạo, chỉnh sửa và xóa mã giảm giá</p>
                         </div>
-                        <a href="{% url 'admin_add_product' %}" 
-                           class="btn-edit" style="background-color: #16a34a;">
-                            + Thêm sản phẩm mới
+                        <a href="{% url 'admin_voucher_add' %}" class="btn-edit" style="background-color: #16a34a;">
+                            + Thêm voucher mới
                         </a>
                     </div>
                 </div>
 
-                {% if products %}
-                <!-- Danh sách sản phẩm -->
+                {% if vouchers %}
+                <!-- Danh sách voucher -->
                 <div class="admin-card">
                     <div class="admin-table">
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b">
-                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Ảnh</th>
-                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Sản phẩm</th>
-                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Giá gốc</th>
-                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Giá KM</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Mã</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Mô tả</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Giảm giá</th>
-                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Ngày tạo</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Hạn sử dụng</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Trạng thái</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for product in products %}
+                                {% for voucher in vouchers %}
                                 <tr class="border-b hover:bg-gray-50">
                                     <td class="py-3 px-4">
-                                        {% if product.main_image %}
-                                        <img src="{{ product.main_image.url }}" 
-                                             alt="{{ product.name }}"
-                                             class="product-image">
-                                        {% else %}
-                                        <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                                            📱
-                                        </div>
-                                        {% endif %}
+                                        <span class="font-bold text-blue-600">{{ voucher.code }}</span>
                                     </td>
+                                    <td class="py-3 px-4">{{ voucher.description|truncatechars:50 }}</td>
                                     <td class="py-3 px-4">
-                                        <div>
-                                            <p class="font-medium text-gray-800">{{ product.brand }}</p>
-                                            <p class="text-gray-600">{{ product.name }}</p>
-                                        </div>
-                                    </td>
-                                    <td class="py-3 px-4 text-gray-500 line-through">
-                                        {{ product.original_price|floatformat:"0"|intcomma }}đ
-                                    </td>
-                                    <td class="py-3 px-4 text-red-600 font-medium">
-                                        {{ product.sale_price|floatformat:"0"|intcomma }}đ
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        {% if product.discount_percent > 0 %}
-                                        <span class="discount-badge">
-                                            -{{ product.discount_percent }}%
-                                        </span>
+                                        {% if voucher.discount_type == 'percent' %}
+                                        <span class="text-red-600 font-medium">-{{ voucher.discount_value }}%</span>
                                         {% else %}
-                                        <span class="text-gray-400">-</span>
+                                        <span class="text-red-600 font-medium">-{{ voucher.discount_value|floatformat:"0"|intcomma }}đ</span>
                                         {% endif %}
                                     </td>
                                     <td class="py-3 px-4 text-gray-500">
-                                        {{ product.created_at|date:"d/m/Y" }}
+                                        {% if voucher.expires_at %}
+                                        {{ voucher.expires_at|date:"d/m/Y" }}
+                                        {% else %}
+                                        Không hết hạn
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if voucher.is_active %}
+                                        <span class="status-badge status-completed">Hoạt động</span>
+                                        {% else %}
+                                        <span class="status-badge status-cancelled">Ngừng</span>
+                                        {% endif %}
                                     </td>
                                     <td class="py-3 px-4">
                                         <div class="flex gap-2">
-                                            <a href="{% url 'admin_edit_product' product.id %}" 
+                                            <a href="{% url 'admin_voucher_edit' voucher.id %}" 
                                                class="btn-edit">
                                                 Sửa
                                             </a>
-                                            <form method="POST" action="{% url 'admin_delete_product' product.id %}" 
-                                                  onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?')">
+                                            <form method="POST" action="{% url 'admin_voucher_delete' voucher.id %}" 
+                                                  onsubmit="return confirm('Bạn có chắc muốn xóa voucher này?')">
                                                 {% csrf_token %}
-                                                <button type="submit" 
-                                                        class="btn-delete">
-                                                    Xóa
-                                                </button>
+                                                <button type="submit" class="btn-delete">Xóa</button>
                                             </form>
                                         </div>
                                     </td>
@@ -154,14 +139,10 @@
                     </div>
                 </div>
                 {% else %}
-                <!-- Hiển thị khi không có sản phẩm -->
                 <div class="admin-card">
                     <div class="empty-state">
-                        <p>Chưa có sản phẩm nào.</p>
-                        <a href="{% url 'admin_add_product' %}" 
-                           class="empty-link mt-2 inline-block">
-                            Thêm sản phẩm đầu tiên
-                        </a>
+                        <p>Chưa có voucher nào.</p>
+                        <a href="{% url 'admin_voucher_add' %}" class="empty-link mt-2 inline-block">Thêm voucher đầu tiên</a>
                     </div>
                 </div>
                 {% endif %}
@@ -170,3 +151,4 @@
     </div>
 </div>
 {% endblock %}
+

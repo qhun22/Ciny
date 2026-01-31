@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-max-width">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Left Sidebar -->
+            <div class="admin-sidebar">
+                <div class="admin-sidebar-card">
+                    <h2 class="admin-sidebar-title">Quản trị</h2>
+                    
+                    <!-- Bảng điều khiển -->
+                    <a href="{% url 'admin_dashboard' %}" 
+                       class="admin-sidebar-btn">
+                        Bảng điều khiển
+                    </a>
+                    
+                    <!-- Quản lý sản phẩm -->
+                    <a href="{% url 'admin_product_list' %}" 
+                       class="admin-sidebar-btn">
+                        📦 Quản lý sản phẩm
+                    </a>
+                    
+                    <!-- Quản lý đơn hàng -->
+                    <a href="{% url 'admin_orders' %}" 
+                       class="admin-sidebar-btn active">
+                        🛒 Quản lý đơn hàng
+                    </a>
+                    
+                    <!-- Quản lý mã giảm giá -->
+                    <a href="{% url 'admin_vouchers' %}" 
+                       class="admin-sidebar-btn">
+                        🎫 Quản lý voucher
+                    </a>
+                    
+                    <!-- Quản lý góp ý -->
+                    <a href="{% url 'admin_feedbacks' %}" 
+                       class="admin-sidebar-btn">
+                        💬 Quản lý góp ý
+                    </a>
+                    
+                    <!-- Quản lý người dùng -->
+                    <a href="{% url 'admin_users' %}" 
+                       class="admin-sidebar-btn">
+                        👥 Quản lý người dùng
+                    </a>
+                    
+                    <!-- Xem trang web -->
+                    <a href="{% url 'home' %}" 
+                       class="admin-sidebar-btn">
+                        🌐 Xem trang web
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Content -->
+            <div class="admin-content">
+                <!-- Header -->
+                <div class="admin-header">
+                    <h1 class="admin-title">🛒 Quản lý đơn hàng</h1>
+                    <p class="admin-subtitle">Xem và cập nhật trạng thái đơn hàng</p>
+                </div>
+
+                {% if orders %}
+                <!-- Danh sách đơn hàng -->
+                <div class="admin-card">
+                    <div class="admin-table">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Mã đơn</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Khách hàng</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Số điện thoại</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Tổng tiền</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Trạng thái</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Thanh toán</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Ngày đặt</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="py-3 px-4 font-medium">#{{ order.id }}</td>
+                                    <td class="py-3 px-4">
+                                        <p class="font-medium">{{ order.full_name }}</p>
+                                        <p class="text-sm text-gray-500">{{ order.user.username }}</p>
+                                    </td>
+                                    <td class="py-3 px-4">{{ order.phone }}</td>
+                                    <td class="py-3 px-4 text-red-600 font-medium">{{ order.total|floatformat:"0"|intcomma }}đ</td>
+                                    <td class="py-3 px-4">
+                                        <span class="status-badge 
+                                            {% if order.status == 'completed' %}status-completed
+                                            {% elif order.status == 'cancelled' %}status-cancelled
+                                            {% elif order.status == 'processing' %}status-processing
+                                            {% elif order.status == 'approved' %}status-approved
+                                            {% else %}status-pending{% endif %}">
+                                            {% if order.status == 'pending' %}Chờ duyệt
+                                            {% elif order.status == 'approved' %}Đã duyệt
+                                            {% elif order.status == 'processing' %}Tiếp nhận
+                                            {% elif order.status == 'completed' %}Thành công
+                                            {% elif order.status == 'cancelled' %}Đã hủy{% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="text-sm {% if order.payment_method == 'cod' %}text-blue-600{% else %}text-green-600{% endif %}">
+                                            {% if order.payment_method == 'cod' %}COD{% else %}Online{% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-gray-500">{{ order.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td class="py-3 px-4">
+                                        <a href="{% url 'admin_order_detail' order.id %}" 
+                                           class="btn-edit">
+                                            Xem chi tiết
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                <div class="admin-card">
+                    <div class="empty-state">
+                        <p>Chưa có đơn hàng nào.</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-max-width">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Left Sidebar -->
+            <div class="admin-sidebar">
+                <div class="admin-sidebar-card">
+                    <h2 class="admin-sidebar-title">Quản trị</h2>
+                    
+                    <!-- Bảng điều khiển -->
+                    <a href="{% url 'admin_dashboard' %}" 
+                       class="admin-sidebar-btn">
+                        Bảng điều khiển
+                    </a>
+                    
+                    <!-- Quản lý sản phẩm -->
+                    <a href="{% url 'admin_product_list' %}" 
+                       class="admin-sidebar-btn">
+                        📦 Quản lý sản phẩm
+                    </a>
+                    
+                    <!-- Quản lý đơn hàng -->
+                    <a href="{% url 'admin_orders' %}" 
+                       class="admin-sidebar-btn">
+                        🛒 Quản lý đơn hàng
+                    </a>
+                    
+                    <!-- Quản lý mã giảm giá -->
+                    <a href="{% url 'admin_vouchers' %}" 
+                       class="admin-sidebar-btn">
+                        🎫 Quản lý voucher
+                    </a>
+                    
+                    <!-- Quản lý góp ý -->
+                    <a href="{% url 'admin_feedbacks' %}" 
+                       class="admin-sidebar-btn">
+                        💬 Quản lý góp ý
+                    </a>
+                    
+                    <!-- Quản lý người dùng -->
+                    <a href="{% url 'admin_users' %}" 
+                       class="admin-sidebar-btn active">
+                        👥 Quản lý người dùng
+                    </a>
+                    
+                    <!-- Xem trang web -->
+                    <a href="{% url 'home' %}" 
+                       class="admin-sidebar-btn">
+                        🌐 Xem trang web
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Content -->
+            <div class="admin-content">
+                <!-- Header -->
+                <div class="admin-header">
+                    <h1 class="admin-title">👥 Quản lý người dùng</h1>
+                    <p class="admin-subtitle">Tìm kiếm và quản lý tài khoản người dùng</p>
+                </div>
+
+                <!-- Tìm kiếm -->
+                <div class="admin-card">
+                    <form method="GET" class="flex gap-4">
+                        <input type="text" name="q" 
+                               value="{{ query|default:'' }}"
+                               placeholder="Tìm theo email hoặc số điện thoại..."
+                               class="admin-input" style="max-width: 300px;">
+                        <button type="submit" class="btn-edit">
+                            🔍 Tìm kiếm
+                        </button>
+                        {% if query %}
+                        <a href="{% url 'admin_users' %}" class="btn-edit" style="background-color: #6b7280;">
+                            Xóa tìm
+                        </a>
+                        {% endif %}
+                    </form>
+                </div>
+
+                {% if users %}
+                <!-- Danh sách người dùng -->
+                <div class="admin-card">
+                    <div class="admin-table">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">ID</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Username</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Họ tên</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Email</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="py-3 px-4 font-medium">#{{ user.id }}</td>
+                                    <td class="py-3 px-4 font-medium">{{ user.username }}</td>
+                                    <td class="py-3 px-4">{{ user.first_name }} {{ user.last_name }}</td>
+                                    <td class="py-3 px-4 text-gray-600">{{ user.email }}</td>
+                                    <td class="py-3 px-4">
+                                        <div class="flex gap-2">
+                                            <a href="{% url 'admin_user_detail' user.id %}" 
+                                               class="btn-edit">
+                                                Xem & Sửa
+                                            </a>
+                                            {% if not user.is_superuser %}
+                                            <form method="POST" action="{% url 'admin_user_delete' user.id %}" 
+                                                  onsubmit="return confirm('Ban co chac muon xoa user nay?')">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn-delete">Xoa</button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Phân trang -->
+                {% if users.paginator.num_pages > 1 %}
+                <div class="flex justify-center gap-2 mt-4">
+                    {% if users.has_previous %}
+                    <a href="?page={{ users.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" 
+                       class="btn-edit" style="background-color: #6b7280;">
+                        ← Trang trước
+                    </a>
+                    {% endif %}
+                    
+                    <span class="flex items-center px-4 py-2 bg-gray-100 rounded-lg">
+                        Trang {{ users.number }} / {{ users.paginator.num_pages }}
+                    </span>
+                    
+                    {% if users.has_next %}
+                    <a href="?page={{ users.next_page_number }}{% if query %}&q={{ query }}{% endif %}" 
+                       class="btn-edit" style="background-color: #6b7280;">
+                        Trang sau →
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% else %}
+                <div class="admin-card">
+                    <div class="empty-state">
+                        {% if query %}
+                        <p>Không tìm thấy người dùng nào với từ khóa "{{ query }}".</p>
+                        <a href="{% url 'admin_users' %}" class="empty-link mt-2 inline-block">Xóa tìm kiếm</a>
+                        {% else %}
+                        <p>Chưa có người dùng nào.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

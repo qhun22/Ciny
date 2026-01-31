@@ -1,278 +1,490 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
-        <!-- Tieu de -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">
-                {% if is_edit %}Chinh sua san pham{% else %}Them san pham moi{% endif %}
-            </h1>
-            <p class="text-gray-500 mt-2">
-                {% if is_edit %}Cap nhat thong tin san pham{% else %}Dien thong tin san pham vao form ben duoi{% endif %}
-            </p>
-        </div>
+<style>
+/* Hover delete button for images */
+.image-item {
+    position: relative;
+    display: inline-block;
+}
 
-        <!-- Form san pham -->
-        <form method="POST" enctype="multipart/form-data" class="space-y-8">
-            {% csrf_token %}
+.image-item:hover .delete-btn {
+    opacity: 1;
+    visibility: visible;
+}
 
-            <!-- Thong tin co ban -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">📱 Thong tin co ban</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Hang san xuat -->
-                    <div>
-                        <label class="block text-gray-700 mb-2">Hang san xuat *</label>
-                        <input type="text" name="brand" 
-                               value="{{ product.brand|default:'' }}" required
-                               placeholder="Vi du: Apple, Samsung, Xiaomi"
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                    </div>
+.delete-btn {
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    transition: opacity 0.2s, visibility 0.2s;
+    z-index: 10;
+}
+
+.delete-btn:hover {
+    background: #dc2626;
+}
+</style>
+
+<div class="admin-container">
+    <div class="admin-max-width">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Left Sidebar -->
+            <div class="admin-sidebar">
+                <div class="admin-sidebar-card">
+                    <h2 class="admin-sidebar-title">Quan tri</h2>
                     
-                    <!-- Ten san pham -->
-                    <div>
-                        <label class="block text-gray-700 mb-2">Ten san pham *</label>
-                        <input type="text" name="name" 
-                               value="{{ product.name|default:'' }}" required
-                               placeholder="Vi du: iPhone 15 Pro Max"
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                    </div>
-                </div>
-                
-                <!-- Anh chinh -->
-                <div class="mt-4">
-                    <label class="block text-gray-700 mb-2">Anh chinh {% if not is_edit %}*{% endif %}</label>
-                    {% if is_edit and product.main_image %}
-                    <div class="mb-2">
-                        <img src="{{ product.main_image.url }}" alt="Anh hien tai" class="w-32 h-32 object-cover rounded-lg">
-                        <p class="text-sm text-gray-500 mt-1">Anh hien tai</p>
-                    </div>
-                    {% endif %}
-                    <input type="file" name="main_image" accept="image/*" {% if not is_edit %}required{% endif %}
-                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                    {% if is_edit %}
-                    <p class="text-sm text-gray-500 mt-1">Bo trong de giu anh hien tai</p>
-                    {% else %}
-                    <p class="text-sm text-gray-500 mt-1">Anh nay se hien thi trong danh sach san pham</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Gia ca -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">💰 Thong tin gia ca</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Gia goc -->
-                    <div>
-                        <label class="block text-gray-700 mb-2">Gia goc (VND) *</label>
-                        <input type="number" name="original_price" min="0" 
-                               value="{{ product.original_price|default:'' }}" required
-                               placeholder="Vi du: 30000000"
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                    </div>
+                    <!-- Bang dieu khien -->
+                    <a href="{% url 'admin_dashboard' %}" 
+                       class="admin-sidebar-btn">
+                        Bang dieu khien
+                    </a>
                     
-                    <!-- Phan tram giam gia -->
-                    <div>
-                        <label class="block text-gray-700 mb-2">Phan tram giam gia (%) *</label>
-                        <input type="number" name="discount_percent" min="0" max="100" step="0.1"
-                               value="{{ product.discount_percent|default:0 }}" required
-                               placeholder="Vi du: 13.8"
-                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                        <p class="text-sm text-gray-500 mt-1">Gia se duoc tinh tu dong (VD: 13.8)</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Thong tin bao hanh va dac diem -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">🛡️ Bao hanh va dac diem</h2>
-                
-                <!-- Thoi gian bao hanh -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Thoi gian bao hanh (thang)</label>
-                    <input type="number" name="warranty_months" min="0" 
-                           value="{{ product.warranty_months|default:12 }}"
-                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                </div>
-                
-                <!-- Checkboxes -->
-                <div class="flex flex-wrap gap-4">
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" name="free_shipping" 
-                               {% if product.free_shipping %}checked{% endif %}
-                               class="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary">
-                        <span class="ml-2">Mien phi giao hang</span>
-                    </label>
+                    <!-- Quan ly san pham -->
+                    <a href="{% url 'admin_product_list' %}" 
+                       class="admin-sidebar-btn active">
+                        Quan ly san pham
+                    </a>
                     
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" name="open_box_check"
-                               {% if product.open_box_check %}checked{% endif %}
-                               class="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary">
-                        <span class="ml-2">Mo hop kiem tra</span>
-                    </label>
+                    <!-- Quan ly don hang -->
+                    <a href="{% url 'admin_orders' %}" 
+                       class="admin-sidebar-btn">
+                        Quan ly don hang
+                    </a>
                     
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" name="return_30_days"
-                               {% if product.return_30_days %}checked{% endif %}
-                               class="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary">
-                        <span class="ml-2">Doi tra trong 30 ngay</span>
-                    </label>
-                </div>
-                
-                <!-- YouTube ID -->
-                <div class="mt-4">
-                    <label class="block text-gray-700 mb-2">ID Video YouTube</label>
-                    <input type="text" name="youtube_id" 
-                           value="{{ product.youtube_id|default:'' }}"
-                           placeholder="Vi du: dQw4w9WgXcQ (lay phan cuoi cua URL)"
-                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                    <p class="text-sm text-gray-500 mt-1">Nhap ID video de hien thi video review trong trang chi tiet</p>
-                </div>
-            </div>
-
-            <!-- Mo ta va thong so ky thuat -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">📝 Mo ta va thong so ky thuat</h2>
-                
-                <!-- Mo ta san pham -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Mo ta san pham *</label>
-                    <textarea name="description" rows="5" required
-                              placeholder="Nhap mo ta chi tiet ve san pham..."
-                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">{{ product.description|default:'' }}</textarea>
-                </div>
-                
-                <!-- Thong so ky thuat -->
-                <div>
-                    <label class="block text-gray-700 mb-2">Thong so ky thuat *</label>
-                    <textarea name="specifications" rows="5" required
-                              placeholder="Nhap thong so ky thuat..."
-                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">{{ product.specifications|default:'' }}</textarea>
+                    <!-- Quan ly ma giam gia -->
+                    <a href="{% url 'admin_vouchers' %}" 
+                       class="admin-sidebar-btn">
+                        Quan ly voucher
+                    </a>
+                    
+                    <!-- Quan ly go y -->
+                    <a href="{% url 'admin_feedbacks' %}" 
+                       class="admin-sidebar-btn">
+                        Quan ly go y
+                    </a>
+                    
+                    <!-- Quan ly nguoi dung -->
+                    <a href="{% url 'admin_users' %}" 
+                       class="admin-sidebar-btn">
+                        Quan ly nguoi dung
+                    </a>
+                    
+                    <!-- Xem trang web -->
+                    <a href="{% url 'home' %}" 
+                       class="admin-sidebar-btn">
+                        Xem trang web
+                    </a>
                 </div>
             </div>
 
-            <!-- Hinh anh chi tiet -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">🖼️ Hinh anh chi tiet</h2>
-                
-                {% if is_edit and product.images.exists %}
-                <div class="mb-4 flex flex-wrap gap-2">
-                    {% for img in product.images.all %}
-                    <div class="relative">
-                        <img src="{{ img.image.url }}" alt="Anh {{ forloop.counter }}" class="w-20 h-20 object-cover rounded-lg">
+            <!-- Right Content -->
+            <div class="admin-content">
+                <!-- Header -->
+                <div class="admin-header">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="admin-title">Chinh sua san pham</h1>
+                            <p class="admin-subtitle">{{ product.brand }} {{ product.name }}</p>
+                        </div>
+                        <a href="{% url 'admin_product_list' %}" 
+                           class="btn-edit" style="background-color: #6b7280;">
+                            Quay lai
+                        </a>
                     </div>
-                    {% endfor %}
                 </div>
-                {% endif %}
-                
-                <label class="block text-gray-700 mb-2">Chon them anh chi tiet</label>
-                <input type="file" name="detail_images" accept="image/*" multiple
-                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                <p class="text-sm text-gray-500 mt-1">Co the chon nhieu anh cung luc</p>
-            </div>
 
-            <!-- Tuy chon bo nho -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">💾 Tuy chon bo nho</h2>
-                <p class="text-gray-500 mb-4">Them cac phien ban bo nho khac nhau</p>
-                
-                <div id="storageContainer" class="space-y-3">
-                    {% if is_edit and product.storage_options.exists %}
-                    {% for storage in product.storage_options.all %}
-                    <div class="flex gap-3 storage-row">
-                        <input type="text" name="storage_name[]" value="{{ storage.storage }}" placeholder="Vi du: 256GB"
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                        <input type="number" name="storage_price[]" value="{{ storage.original_price }}" placeholder="Gia goc (VND)"
-                               min="0"
-                               class="w-48 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                        <button type="button" onclick="removeRow(this)"
-                                class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">
-                            -
-                        </button>
-                    </div>
-                        {% endfor %}
-                    {% else %}
-                    <div class="flex gap-3 storage-row">
-                        <input type="text" name="storage_name[]" placeholder="Vi du: 128GB"
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                        <input type="number" name="storage_price[]" placeholder="Gia goc (VND)"
-                               min="0" value="0"
-                               class="w-48 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                        <button type="button" onclick="addStorageRow()"
-                                class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
-                            +
-                        </button>
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <button type="button" onclick="addStorageRow()"
-                        class="mt-4 text-primary hover:underline">
-                    + Them tuy chon bo nho
-                </button>
-            </div>
-
-            <!-- Tuy chon mau sac -->
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">🎨 Tuy chon mau sac</h2>
-                <p class="text-gray-500 mb-4">Them cac mau sac co san cho san pham</p>
-                
-                <div id="colorContainer" class="space-y-3">
-                    {% if is_edit and product.color_options.exists %}
-                    {% for color in product.color_options.all %}
-                    <div class="flex gap-3 color-row">
-                        <input type="text" name="color_name[]" value="{{ color.color_name }}" placeholder="Vi du: Midnight Black"
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                            <div class="flex-1 flex items-center gap-2">
-                                {% if color.color_image %}
-                                <img src="{{ color.color_image.url }}" alt="{{ color.color_name }}" class="w-10 h-10 object-cover rounded-lg">
-                                {% endif %}
-                        <input type="file" name="color_image[]" accept="image/*"
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
+                <!-- Form san pham -->
+                <div class="admin-card">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Thong tin co ban -->
+                        <h2 class="admin-card-title">Thong tin co ban</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Hang san xuat -->
+                            <div>
+                                <label class="block text-gray-700 mb-2">Hang san xuat *</label>
+                                <input type="text" name="brand" 
+                                       value="{{ product.brand|default:'' }}" required
+                                       placeholder="Vi du: Apple, Samsung, Xiaomi"
+                                       class="admin-input">
                             </div>
-                        <button type="button" onclick="removeRow(this)"
-                                class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">
-                            -
-                        </button>
-                    </div>
-                        {% endfor %}
-                    {% else %}
-                    <div class="flex gap-3 color-row">
-                        <input type="text" name="color_name[]" placeholder="Vi du: Midnight Black"
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                        <input type="file" name="color_image[]" accept="image/*"
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary">
-                        <button type="button" onclick="addColorRow()"
-                                class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
-                            +
-                        </button>
-                    </div>
-                    {% endif %}
+                            
+                            <!-- Ten san pham -->
+                            <div>
+                                <label class="block text-gray-700 mb-2">Ten san pham *</label>
+                                <input type="text" name="name" 
+                                       value="{{ product.name|default:'' }}" required
+                                       placeholder="Vi du: iPhone 15 Pro Max"
+                                       class="admin-input">
+                            </div>
+                        </div>
+                        
+                        <!-- Anh chinh - CO NUT X DE XOA -->
+                        <div class="mt-4">
+                            <label class="block text-gray-700 mb-2">Anh chinh (Hover de xoa)</label>
+                            {% if product.main_image %}
+                            <div class="image-item" style="display: inline-block; margin-bottom: 8px; position: relative;">
+                                <img src="{{ product.main_image.url }}" 
+                                     alt="{{ product.name }}"
+                                     class="w-48 h-48 object-cover rounded-lg">
+                                <button type="button" 
+                                        onclick="deleteMainImage()"
+                                        class="delete-btn"
+                                        title="Xoa anh nay">
+                                    X
+                                </button>
+                            </div>
+                            <input type="hidden" name="delete_main_image" id="deleteMainImageInput" value="false">
+                            {% endif %}
+                            <input type="file" name="main_image" accept="image/*"
+                                   class="admin-input">
+                        </div>
+                        
+                        <!-- Mo ta san pham -->
+                        <div class="mt-4">
+                            <label class="block text-gray-700 mb-2">Mo ta san pham *</label>
+                            <textarea name="description" rows="5" required
+                                      placeholder="Nhap mo ta san pham..."
+                                      class="admin-input">{{ product.description|default:'' }}</textarea>
+                        </div>
+                        
+                        <!-- Thong tin gia ca -->
+                        <h2 class="admin-card-title mt-6">Thong tin gia ca</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Gia goc -->
+                            <div>
+                                <label class="block text-gray-700 mb-2">Gia goc (VND) *</label>
+                                <input type="number" name="original_price" id="originalPrice"
+                                       value="{{ product.original_price|default:0 }}" required
+                                       min="0"
+                                       placeholder="Nhap gia goc"
+                                       class="admin-input"
+                                       oninput="calculateSalePrice()">
+                            </div>
+                            
+                            <!-- Phan tram giam gia - TU DONG DIEN VAO + TINH REAL-TIME -->
+                            <div>
+                                <label class="block text-gray-700 mb-2">Phan tram giam gia (%) *</label>
+                                <input type="number" name="discount_percent" id="discountPercent"
+                                       value="{{ product.discount_percent|default:0 }}" required
+                                       min="0" max="100" step="0.1"
+                                       placeholder="Vi du: 16"
+                                       class="admin-input"
+                                       oninput="calculateSalePrice()">
+                                <p class="text-xs text-gray-500 mt-1">Nhap % de tinh gia KM</p>
+                            </div>
+                            
+                            <!-- Gia khuyen mai (hien thi tu dong) -->
+                            <div>
+                                <label class="block text-gray-700 mb-2">Gia khuyen mai (tu dong)</label>
+                                <input type="text" id="salePriceDisplay"
+                                       value="{{ product.sale_price|default:0|floatformat:'0'|intcomma }} VND" disabled
+                                       class="admin-input bg-gray-100 text-red-600 font-bold">
+                            </div>
+                        </div>
+                        
+                        <!-- Ton kho -->
+                        <div class="mt-4">
+                            <label class="block text-gray-700 mb-2">So luong ton kho *</label>
+                            <input type="number" name="stock_quantity" 
+                                   value="{{ product.stock_quantity|default:0 }}" required
+                                   min="0"
+                                   placeholder="Vi du: 100"
+                                   class="admin-input">
+                            <p class="text-xs text-gray-500 mt-1">So luong san pham con lai trong kho</p>
+                        </div>
+                        
+                        <!-- Thong tin bao hanh va dac diem -->
+                        <h2 class="admin-card-title mt-6">Bao hanh va dac diem</h2>
+                        
+                        <div>
+                            <label class="block text-gray-700 mb-2">Thoi gian bao hanh (thang)</label>
+                            <input type="number" name="warranty_months" 
+                                   value="{{ product.warranty_months|default:12 }}" required
+                                   min="0"
+                                   class="admin-input">
+                        </div>
+                        
+                        <!-- Checkboxes -->
+                        <div class="flex flex-wrap gap-4 mt-4">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" name="free_shipping" 
+                                       {% if product.free_shipping %}checked{% endif %}
+                                       class="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500">
+                                <span class="ml-2">Mien phi giao hang</span>
+                            </label>
+                            
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" name="open_box_check"
+                                       {% if product.open_box_check %}checked{% endif %}
+                                       class="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500">
+                                <span class="ml-2">Mo hop kiem tra</span>
+                            </label>
+                            
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" name="return_30_days"
+                                       {% if product.return_30_days %}checked{% endif %}
+                                       class="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500">
+                                <span class="ml-2">Doi tra trong 30 ngay</span>
+                            </label>
+                        </div>
+                        
+                        <!-- Thong so ky thuat -->
+                        <div class="mt-6">
+                            <label class="block text-gray-700 mb-2">Thong so ky thuat *</label>
+                            <textarea name="specifications" rows="5" required
+                                      placeholder="Nhap thong so ky thuat..."
+                                      class="admin-input">{{ product.specifications|default:'' }}</textarea>
+                        </div>
+                        
+                        <!-- Hinh anh chi tiet hien co - CO NUT X DE XOA -->
+                        {% if product.images.all %}
+                        <div class="mt-6">
+                            <label class="block text-gray-700 mb-2">Hinh anh chi tiet hien co (Hover de xoa)</label>
+                            <div class="flex flex-wrap gap-3">
+                                {% for img in product.images.all %}
+                                <div class="image-item">
+                                    <img src="{{ img.image.url }}" 
+                                         alt="Anh chi tiet"
+                                         class="w-24 h-24 object-cover rounded-lg border border-gray-200">
+                                    <button type="button" 
+                                            onclick="deleteImage({{ img.id }})"
+                                            class="delete-btn"
+                                            title="Xoa anh nay">
+                                        X
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="delete_images" id="deleteImagesInput" value="">
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Them anh chi tiet moi -->
+                        <div class="mt-4">
+                            <label class="block text-gray-700 mb-2">Them anh chi tiet moi</label>
+                            <input type="file" name="detail_images" accept="image/*" multiple
+                                   class="admin-input">
+                        </div>
+                        
+                        <!-- Tuy chon bo nho hien co - HOVER DE XOA -->
+                        {% if product.storage_options.all %}
+                        <div class="mt-6">
+                            <label class="block text-gray-700 mb-2">Tuy chon bo nho hien co (Hover de xoa)</label>
+                            <div class="flex flex-wrap gap-2" id="storageDisplayList">
+                                {% for storage in product.storage_options.all %}
+                                <div class="storage-item image-item flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg relative">
+                                    <span class="font-medium">{{ storage.storage }}</span>
+                                    <span class="text-gray-500">-</span>
+                                    <span class="text-red-600">{{ storage.original_price|default:0|floatformat:"0"|intcomma }} VND</span>
+                                    <button type="button" 
+                                            onclick="deleteStorage({{ storage.id }})"
+                                            class="delete-btn"
+                                            title="Xoa tuy chon nay">
+                                        X
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="delete_storages" id="deleteStoragesInput" value="">
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Cap nhat tuy chon bo nho - AN HIEN PHAN THEM MOI -->
+                        <div class="mt-4">
+                            <label class="block text-gray-700 mb-2">Them tuy chon bo nho (nhan + de them moi)</label>
+                            <div id="storageContainer" class="space-y-3">
+                                <!-- Chi hien thi khi nguoi dung an "Them" -->
+                            </div>
+                            <button type="button" onclick="addStorageRow()"
+                                    class="mt-2 text-blue-500 hover:underline">
+                                + Them tuy chon bo nho
+                            </button>
+                        </div>
+                        
+                        <!-- Tuy chon mau sac hien co - HOVER DE XOA -->
+                        {% if product.color_options.all %}
+                        <div class="mt-6">
+                            <label class="block text-gray-700 mb-2">Tuy chon mau sac hien co (Hover de xoa)</label>
+                            <div class="flex flex-wrap gap-2" id="colorDisplayList">
+                                {% for color in product.color_options.all %}
+                                <div class="color-item image-item flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg relative">
+                                    {% if color.color_image %}
+                                    <img src="{{ color.color_image.url }}" 
+                                         alt="{{ color.color_name }}"
+                                         class="w-8 h-8 rounded-full object-cover">
+                                    {% endif %}
+                                    <span class="font-medium">{{ color.color_name }}</span>
+                                    <button type="button" 
+                                            onclick="deleteColor({{ color.id }})"
+                                            class="delete-btn"
+                                            title="Xoa tuy chon nay">
+                                        X
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="delete_colors" id="deleteColorsInput" value="">
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Them tuy chon mau sac - AN HIEN PHAN THEM MOI -->
+                        <div class="mt-4">
+                            <label class="block text-gray-700 mb-2">Them tuy chon mau sac (nhan + de them moi)</label>
+                            <div id="colorContainer" class="space-y-3">
+                                <!-- Chi hien thi khi nguoi dung an "Them" -->
+                            </div>
+                            <button type="button" onclick="addColorRow()"
+                                    class="mt-2 text-blue-500 hover:underline">
+                                + Them tuy chon mau sac
+                            </button>
+                        </div>
+                        
+                        <!-- Nut hanh dong -->
+                        <div class="flex gap-4 mt-6">
+                            <button type="submit" 
+                                    class="btn-edit" style="background-color: #16a34a;">
+                                Luu thay doi
+                            </button>
+                            <a href="{% url 'admin_product_list' %}" 
+                               class="btn-edit" style="background-color: #6b7280;">
+                                Huy
+                            </a>
+                        </div>
+                    </form>
                 </div>
-                
-                <button type="button" onclick="addColorRow()"
-                        class="mt-4 text-primary hover:underline">
-                    + Them tuy chon mau sac
-                </button>
             </div>
-
-            <!-- Nut submit -->
-            <div class="flex justify-end gap-4">
-                <a href="{% url 'admin_product_list' %}" 
-                   class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
-                    Huy
-                </a>
-                <button type="submit" 
-                        class="px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-blue-600 transition">
-                    {% if is_edit %}Cap nhat san pham{% else %}Them san pham{% endif %}
-                </button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
+
+<script>
+// Mang luu ID cac anh can xoa
+let deleteImageIds = [];
+
+// Xoa anh khi click nut X
+function deleteImage(imageId) {
+    if (confirm('Ban co muon xoa anh nay?')) {
+        deleteImageIds.push(imageId);
+        document.getElementById('deleteImagesInput').value = deleteImageIds.join(',');
+        // An di thay vi xoa khoi DOM ngay lap tuc
+        event.target.closest('.image-item').style.display = 'none';
+    }
+}
+
+// Xoa anh chinh
+function deleteMainImage() {
+    if (confirm('Ban co muon xoa anh chinh? Anh mac dinh se bi thay the khi ban tai len anh moi.')) {
+        document.getElementById('deleteMainImageInput').value = 'true';
+        event.target.closest('.image-item').style.display = 'none';
+    }
+}
+
+// Mang luu ID cac storage can xoa
+let deleteStorageIds = [];
+
+// Xoa storage khi click nut X
+function deleteStorage(storageId) {
+    if (confirm('Ban co muon xoa tuy chon bo nho nay?')) {
+        deleteStorageIds.push(storageId);
+        document.getElementById('deleteStoragesInput').value = deleteStorageIds.join(',');
+        event.target.closest('.storage-item').style.display = 'none';
+    }
+}
+
+// Mang luu ID cac color can xoa
+let deleteColorIds = [];
+
+// Xoa color khi click nut X
+function deleteColor(colorId) {
+    if (confirm('Ban co muon xoa tuy chon mau sac nay?')) {
+        deleteColorIds.push(colorId);
+        document.getElementById('deleteColorsInput').value = deleteColorIds.join(',');
+        event.target.closest('.color-item').style.display = 'none';
+    }
+}
+
+// Tinh gia khuyen mai theo thoi gian thuc
+function calculateSalePrice() {
+    const originalPrice = parseFloat(document.getElementById('originalPrice').value) || 0;
+    const discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
+    
+    // Tinh gia khuyen mai: Gia goc - (Gia goc * % / 100)
+    const salePrice = originalPrice - (originalPrice * discountPercent / 100);
+    
+    // Hien thi gia voi dinh dang so co dau phay
+    const formattedPrice = Math.round(salePrice).toLocaleString('vi-VN');
+    document.getElementById('salePriceDisplay').value = formattedPrice + ' VND';
+}
+
+// Chay tinh toan lan dau khi trang load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateSalePrice();
+});
+
+// Them dong storage moi
+function addStorageRow() {
+    const container = document.getElementById('storageContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'flex gap-3 storage-row';
+    newRow.innerHTML = `
+        <input type="hidden" name="storage_id[]" value="">
+        <input type="text" name="storage_name[]" placeholder="Vi du: 256GB"
+               class="flex-1 admin-input">
+        <input type="number" name="storage_price[]" placeholder="Gia goc (VND)"
+               min="0" value="0"
+               class="w-48 admin-input">
+        <button type="button" onclick="this.parentElement.remove()"
+                class="btn-edit" style="background-color: #ef4444;">
+            X
+        </button>
+    `;
+    container.appendChild(newRow);
+}
+
+// Them dong color moi
+function addColorRow() {
+    const container = document.getElementById('colorContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'flex gap-3 color-row';
+    newRow.innerHTML = `
+        <input type="hidden" name="color_id[]" value="">
+        <input type="text" name="color_name[]" placeholder="Vi du: Midnight Black"
+               class="flex-1 admin-input">
+        <input type="file" name="color_image[]" accept="image/*"
+               class="flex-1 admin-input">
+        <button type="button" onclick="this.parentElement.remove()"
+                class="btn-edit" style="background-color: #ef4444;">
+            X
+        </button>
+    `;
+    container.appendChild(newRow);
+}
+</script>
 {% endblock %}

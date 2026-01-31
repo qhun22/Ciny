@@ -97,6 +97,12 @@ class Product(models.Model):
         verbose_name="Phần trăm giảm giá (%)"
     )
     
+    # Tồn kho
+    stock_quantity = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Số lượng tồn kho"
+    )
+    
     # Thông tin bảo hành và đặc điểm
     warranty_months = models.PositiveIntegerField(
         default=12, 
@@ -110,13 +116,6 @@ class Product(models.Model):
     return_30_days = models.BooleanField(
         default=False, 
         verbose_name="Đổi trả trong 30 ngày"
-    )
-    
-    # YouTube video
-    youtube_id = models.CharField(
-        max_length=50, 
-        blank=True, 
-        verbose_name="ID Video YouTube"
     )
     
     # Thời gian tạo
