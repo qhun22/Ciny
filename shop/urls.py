@@ -95,5 +95,8 @@ urlpatterns = [
     # Tra cứu đơn hàng
     path('orders/', views.order_tracking, name='order_tracking'),
     path('orders/<int:order_id>/', views.order_detail, name='order_detail'),
+    
+    # Góp ý
+    path('profile/feedback/create/', views.feedback_create, name='feedback_create'),
 ]
 

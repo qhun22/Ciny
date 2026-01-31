@@ -6,7 +6,7 @@
  */
 function showTab(tab) {
     // Hide all tabs
-    const tabs = ['overview', 'addresses', 'vouchers'];
+    const tabs = ['overview', 'addresses', 'vouchers', 'orders', 'feedback'];
     tabs.forEach(t => {
         const tabEl = document.getElementById('tab-' + t);
         const btnEl = document.getElementById('btn-' + t);

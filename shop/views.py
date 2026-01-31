@@ -14,7 +14,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
-from .models import Product, Review, Coupon, ProductImage, StorageOption, ColorOption, Cart, CartItem, ShippingAddress, Order, OrderItem, UserProfile, UserVoucher
+from .models import Product, Review, Coupon, ProductImage, StorageOption, ColorOption, Cart, CartItem, ShippingAddress, Order, OrderItem, UserProfile, UserVoucher, Feedback
 from .forms import RegistrationForm, ReviewForm, CouponForm
 
 
@@ -517,6 +517,12 @@ def profile_view(request):
         models.Q(coupon__expires_at__gt=timezone.now())
     ).select_related('coupon').order_by('-created_at')
     
+    # Lấy danh sách đơn hàng của user
+    orders = Order.objects.filter(user=request.user).prefetch_related('items').order_by('-created_at')
+    
+    # Lấy danh sách góp ý của user
+    feedbacks = Feedback.objects.filter(user=request.user).order_by('-created_at')
+    
     context = {
         'user': request.user,
         'is_admin': is_admin_user,
@@ -526,6 +532,8 @@ def profile_view(request):
         'is_phone_verified': is_phone_verified,
         'active_tab': active_tab,
         'vouchers': vouchers,
+        'orders': orders,
+        'feedbacks': feedbacks,
         'page_title': f'Profile - {request.user.username}',
     }
     
@@ -1363,4 +1371,47 @@ def select_cart_items(request):
         return redirect('checkout')
     
     return redirect('cart_detail')
+
+
+@login_required
+def feedback_create(request):
+    """
+    Tạo mới góp ý.
+    """
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        content = request.POST.get('content', '').strip()
+        
+        if not title or not content:
+            messages.error(request, 'Vui lòng nhập đầy đủ tiêu đề và nội dung.')
+        else:
+            Feedback.objects.create(
+                user=request.user,
+                title=title,
+                content=content
+            )
+            messages.success(request, 'Góp ý của bạn đã được gửi! Chúng tôi sẽ phản hồi sớm nhất.')
+        
+        return redirect('profile' + '?tab=feedback')
+    
+    return redirect('profile')
+
+
+@login_required
+def feedback_list(request):
+    """
+    Lấy danh sách góp ý của user (AJAX).
+    """
+    feedbacks = Feedback.objects.filter(user=request.user).order_by('-created_at')
+    data = [{
+        'id': f.id,
+        'title': f.title,
+        'content': f.content,
+        'admin_response': f.admin_response,
+        'created_at': f.created_at.strftime('%d/%m/%Y %H:%M'),
+        'responded_at': f.responded_at.strftime('%d/%m/%Y %H:%M') if f.responded_at else None,
+        'is_responded': f.is_responded
+    } for f in feedbacks]
+    
+    return JsonResponse({'feedbacks': data})
 

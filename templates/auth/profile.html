@@ -1,35 +1,50 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
 
 {% block title %}Hồ sơ - QHUN22 Mobile{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-5xl mx-auto">
+<div class="profile-container">
+    <div class="profile-max-width">
         <div class="flex flex-col md:flex-row gap-6">
             <!-- Left Sidebar -->
-            <div class="w-full md:w-1/4">
-                <div class="bg-white rounded-lg border border-gray-200 p-4">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Tài khoản</h2>
+            <div class="profile-sidebar">
+                <div class="profile-sidebar-card">
+                    <h2 class="profile-sidebar-title">Tài khoản</h2>
                     
                     <!-- Tổng quan tab -->
                     <button onclick="showTab('overview')" id="btn-overview"
-                            class="w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors
-                                   {% if active_tab != 'addresses' %}bg-blue-600 text-white{% else %}hover:bg-gray-50 text-gray-600{% endif %}">
+                            class="profile-tab-btn {% if active_tab != 'addresses' and active_tab != 'vouchers' %}active{% endif %}">
                         Tổng quan
                     </button>
                     
                     <!-- Sổ địa chỉ tab -->
                     <button onclick="showTab('addresses')" id="btn-addresses"
-                            class="w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors
-                                   {% if active_tab == 'addresses' %}bg-blue-600 text-white{% else %}hover:bg-gray-50 text-gray-600{% endif %}">
+                            class="profile-tab-btn {% if active_tab == 'addresses' %}active{% endif %}">
                         Sổ địa chỉ
                     </button>
                     
                     <!-- Voucher tab -->
                     <button onclick="showTab('vouchers')" id="btn-vouchers"
-                            class="w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors
-                                   {% if active_tab == 'vouchers' %}bg-blue-600 text-white{% else %}hover:bg-gray-50 text-gray-600{% endif %}">
+                            class="profile-tab-btn {% if active_tab == 'vouchers' %}active{% endif %}">
                         Voucher
+                    </button>
+                    
+                    <!-- Đơn hàng tab -->
+                    <button onclick="showTab('orders')" id="btn-orders"
+                            class="profile-tab-btn {% if active_tab == 'orders' %}active{% endif %}">
+                        Đơn hàng
+                    </button>
+                    
+                    <!-- Góp ý tab -->
+                    <button onclick="showTab('feedback')" id="btn-feedback"
+                            class="profile-tab-btn {% if active_tab == 'feedback' %}active{% endif %}">
+                        Góp ý
                     </button>
                     
                     {% if is_admin %}
@@ -46,12 +61,12 @@
             </div>
 
             <!-- Right Content -->
-            <div class="w-full md:w-3/4">
+            <div class="profile-content">
                 
                 <!-- Tab: Tổng quan (Personal Info) -->
-                <div id="tab-overview" class="{% if active_tab == 'addresses' %}hidden{% endif %}">
-                    <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Thông tin cá nhân</h3>
+                <div id="tab-overview" class="{% if active_tab == 'addresses' or active_tab == 'vouchers' %}hidden{% endif %}">
+                    <div class="profile-content-card">
+                        <h3 class="section-title">Thông tin cá nhân</h3>
                         
                         <form method="POST" action="{% url 'profile' %}">
                             {% csrf_token %}
@@ -61,14 +76,14 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">
                                         Họ và tên
-                                        <span class="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Đã xác thực</span>
+                                        <span class="verified-badge">Đã xác thực</span>
                                     </label>
-                                    <input type="hidden" name="full_name" value="{{ user.first_name }}">
                                     <div class="relative">
                                         <input type="text" 
+                                               name="full_name"
                                                value="{{ user.first_name }}"
                                                disabled
-                                               class="w-full px-3 py-2 border border-gray-200 bg-gray-100 rounded-lg text-gray-600 cursor-not-allowed">
+                                               class="profile-input cursor-not-allowed">
                                         <svg class="w-5 h-5 text-green-500 absolute right-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         </svg>
@@ -76,46 +91,46 @@
                                     <p class="text-xs text-gray-500 mt-1">Họ và tên đã được xác thực và khóa.</p>
                                 </div>
                                 
-                            <!-- Số điện thoại -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    Số điện thoại
+                                <!-- Số điện thoại -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Số điện thoại
+                                        {% if is_phone_verified %}
+                                        <span class="verified-badge">Đã xác thực</span>
+                                        {% endif %}
+                                    </label>
                                     {% if is_phone_verified %}
-                                    <span class="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Đã xác thực</span>
-                                    {% endif %}
-                                </label>
-                                {% if is_phone_verified %}
-                                <input type="hidden" name="phone_number" value="{{ phone_number }}">
-                                <div class="relative">
+                                    <input type="hidden" name="phone_number" value="{{ phone_number }}">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               value="{{ phone_number }}"
+                                               disabled
+                                               class="profile-input cursor-not-allowed">
+                                        <svg class="w-5 h-5 text-green-500 absolute right-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Số điện thoại đã được xác thực và khóa.</p>
+                                    {% else %}
                                     <input type="text" 
-                                           value="{{ phone_number }}"
-                                           disabled
-                                           class="w-full px-3 py-2 border border-gray-200 bg-gray-100 rounded-lg text-gray-600 cursor-not-allowed">
-                                    <svg class="w-5 h-5 text-green-500 absolute right-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
+                                           name="phone_number"
+                                           value="{% if phone_number %}{{ phone_number }}{% endif %}"
+                                           placeholder="Nhập số điện thoại"
+                                           class="profile-input">
+                                    {% endif %}
                                 </div>
-                                <p class="text-xs text-gray-500 mt-1">Số điện thoại đã được xác thực và khóa.</p>
-                                {% else %}
-                                <input type="text" 
-                                       name="phone_number"
-                                       value="{% if phone_number %}{{ phone_number }}{% endif %}"
-                                       placeholder="Nhập số điện thoại"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                {% endif %}
-                            </div>
                                 
                                 <!-- Email -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">
                                         Email
-                                        <span class="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Đã xác thực</span>
+                                        <span class="verified-badge">Đã xác thực</span>
                                     </label>
                                     <div class="relative">
                                         <input type="email" 
                                                value="{{ user.email }}"
                                                disabled
-                                               class="w-full px-3 py-2 border border-gray-200 bg-gray-100 rounded-lg text-gray-600 cursor-not-allowed">
+                                               class="profile-input cursor-not-allowed">
                                         <svg class="w-5 h-5 text-green-500 absolute right-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         </svg>
@@ -125,44 +140,39 @@
                             </div>
                             
                             <!-- Divider -->
-                            <hr class="border-gray-200 my-6">
+                            <hr class="profile-divider">
                             
                             <!-- Password Change -->
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Đổi mật khẩu</h3>
+                            <h3 class="section-title">Đổi mật khẩu</h3>
                             
                             <div class="grid grid-cols-1 gap-4 mb-4">
-                                <!-- Mật khẩu hiện tại -->
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu hiện tại</label>
+                                    <label class="profile-label">Mật khẩu hiện tại</label>
                                     <input type="password" 
                                            name="old_password"
                                            placeholder="Nhập mật khẩu hiện tại"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                           class="profile-input">
                                 </div>
                                 
-                                <!-- Mật khẩu mới -->
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu mới</label>
+                                    <label class="profile-label">Mật khẩu mới</label>
                                     <input type="password" 
                                            name="new_password1"
                                            placeholder="Nhập mật khẩu mới"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                           class="profile-input">
                                 </div>
                                 
-                                <!-- Nhập lại mật khẩu mới -->
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nhập lại mật khẩu mới</label>
+                                    <label class="profile-label">Nhập lại mật khẩu mới</label>
                                     <input type="password" 
                                            name="new_password2"
                                            placeholder="Nhập lại mật khẩu mới"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                           class="profile-input">
                                 </div>
                             </div>
                             
-                            <!-- Submit Button -->
                             <div class="mt-6">
-                                <button type="submit" 
-                                        class="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                                <button type="submit" class="btn-primary">
                                     Lưu
                                 </button>
                             </div>
@@ -172,36 +182,31 @@
 
                 <!-- Tab: Sổ địa chỉ (Addresses) -->
                 <div id="tab-addresses" class="{% if active_tab != 'addresses' %}hidden{% endif %}">
-                    <div class="bg-white rounded-lg border border-gray-200 p-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Địa chỉ của bạn</h3>
+                    <div class="profile-content-card">
+                        <h3 class="section-title">Địa chỉ của bạn</h3>
                         
                         <!-- Add Address Form -->
                         <form method="POST" action="{% url 'address_add' %}">
                             {% csrf_token %}
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nhập họ tên</label>
+                            <div class="input-group">
+                                <div class="input-group-item">
+                                    <label class="profile-label">Nhập họ tên</label>
                                     <input type="text" name="full_name" required
                                            placeholder="Nguyễn Văn A"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                           class="profile-input">
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                                <div class="input-group-item">
+                                    <label class="profile-label">Số điện thoại</label>
                                     <input type="text" name="phone" required
                                            placeholder="0123 456 789"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                           class="profile-input">
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ chi tiết</label>
+                                <div class="input-group-item">
+                                    <label class="profile-label">Địa chỉ chi tiết</label>
                                     <input type="text" name="address" required
                                            placeholder="Số nhà, đường, phường/xã"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                           class="profile-input">
                                 </div>
-                            </div>
-                            <div class="mt-4 flex items-center gap-2">
-                                <input type="checkbox" name="is_default" id="is_default"
-                                       class="w-4 h-4 rounded border-gray-300 text-purple-600">
-                                <label for="is_default" class="text-sm text-gray-700">Đặt làm địa chỉ mặc định</label>
                             </div>
                         </form>
                         
@@ -212,22 +217,22 @@
                             
                             <h4 class="font-medium text-gray-700 mt-6 mb-3">Chọn địa chỉ mặc định</h4>
                             
-                            <div class="space-y-3">
+                            <div class="address-list">
                                 {% for addr in addresses %}
-                                <div class="border border-gray-200 rounded-lg p-4 {% if addr.is_default %}border-purple-500 bg-purple-50{% endif %} hover:bg-gray-50 transition-colors cursor-pointer"
+                                <div class="address-card {% if addr.is_default %}active{% endif %}"
                                      onclick="selectAddress({{ addr.id }})">
                                     <div class="flex items-center gap-3">
                                         <input type="radio" name="default_address" value="{{ addr.id }}" 
                                                {% if addr.is_default %}checked{% endif %}
                                                id="addr_{{ addr.id }}"
-                                               class="w-5 h-5 text-purple-600 cursor-pointer">
+                                               class="profile-radio">
                                         <div class="flex-1">
                                             <p class="font-medium text-gray-800">{{ addr.full_name }}</p>
-                                            <p class="text-gray-600 text-sm"><span class="text-pink-500">📞</span> {{ addr.phone }}</p>
-                                            <p class="text-gray-600 text-sm"><span class="text-pink-500">📍</span> {{ addr.address }}</p>
+                                            <p class="text-gray-600 text-sm"><span class="address-icon">📞</span> {{ addr.phone }}</p>
+                                            <p class="text-gray-600 text-sm"><span class="address-icon">📍</span> {{ addr.address }}</p>
                                         </div>
                                         {% if addr.is_default %}
-                                        <span class="px-2 py-0.5 bg-purple-500 text-white text-xs rounded">Mặc định</span>
+                                        <span class="default-badge">Mặc định</span>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -235,20 +240,17 @@
                             </div>
                             
                             <!-- Buttons -->
-                            <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
-                                <div class="flex gap-2">
-                                    <a href="{% url 'address_add' %}" 
-                                       class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">
+                            <div class="form-actions">
+                                <div class="form-actions-start">
+                                    <a href="{% url 'address_add' %}" class="btn-secondary">
                                         Thêm địa chỉ mới
                                     </a>
                                 </div>
-                                <div class="flex gap-2">
-                                    <button type="button" onclick="deleteSelectedAddress()"
-                                            class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors">
+                                <div class="form-actions-end">
+                                    <button type="button" onclick="deleteSelectedAddress()" class="btn-danger">
                                         Xóa
                                     </button>
-                                    <button type="submit" form="addressForm"
-                                            class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+                                    <button type="submit" form="addressForm" class="btn-primary">
                                         Lưu
                                     </button>
                                 </div>
@@ -262,9 +264,9 @@
                         </form>
                         
                         {% else %}
-                        <div class="text-center py-8 mt-6">
-                            <div class="text-4xl mb-2">📍</div>
-                            <p class="text-gray-500">Bạn chưa có địa chỉ nào.</p>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📍</div>
+                            <p>Bạn chưa có địa chỉ nào.</p>
                         </div>
                         {% endif %}
                     </div>
@@ -272,137 +274,217 @@
                 
                 <!-- Tab: Voucher -->
                 <div id="tab-vouchers" class="{% if active_tab != 'vouchers' %}hidden{% endif %}">
-                    <div class="bg-white rounded-lg border border-gray-200 p-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Voucher của bạn</h3>
+                    <div class="profile-content-card">
+                        <h3 class="section-title">Voucher của bạn</h3>
                         
-                        <!-- Form xóa voucher đã chọn -->
-                        <form method="POST" action="{% url 'voucher_delete' %}" id="voucherDeleteForm">
+                        {% if user_vouchers %}
+                        <form method="POST" action="{% url 'voucher_delete_bulk' %}" id="deleteVouchersForm">
                             {% csrf_token %}
                             
-                            {% if vouchers %}
-                            <div class="grid grid-cols-1 gap-4 mb-4">
-                                {% for v in vouchers %}
+                            <div class="space-y-4">
+                                {% for user_voucher in user_vouchers %}
                                 <div class="border border-gray-200 rounded-lg p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
-                                    <input type="checkbox" name="voucher_ids" value="{{ v.id }}" 
-                                           class="w-5 h-5 rounded border-gray-300 text-blue-600 cursor-pointer">
-                                    <div class="flex-1">
-                                        <p class="font-semibold text-gray-800">{{ v.coupon.code }}</p>
-                                        <p class="text-sm text-gray-600">{{ v.coupon.description|default:"Giảm giá" }}</p>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            HSD: {{ v.coupon.expires_at|date:"d/m/Y" }}
-                                        </p>
-                                    </div>
-                                    <div class="text-right">
-                                        {% if v.coupon.discount_type == 'percent' %}
-                                        <span class="text-lg font-bold text-red-500">{{ v.coupon.discount_value }}% OFF</span>
-                                        {% else %}
-                                        <span class="text-lg font-bold text-red-500">{{ v.coupon.discount_value|floatformat:0 }}đ OFF</span>
-                                        {% endif %}
+                                    <input type="checkbox" name="voucher_ids[]" value="{{ user_voucher.id }}" 
+                                           class="profile-checkbox">
+                                    <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                                        <div>
+                                            <p class="font-bold text-blue-600">{{ user_voucher.coupon.code }}</p>
+                                            <p class="text-sm text-gray-600">{{ user_voucher.coupon.description }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-700">HSD: {{ user_voucher.coupon.expires_at|date:"d/m/Y" }}</p>
+                                            <p class="text-sm text-red-500 font-medium">
+                                                {% if user_voucher.coupon.discount_type == 'percent' %}
+                                                    Giảm {{ user_voucher.coupon.discount_value|floatformat:"0" }}%
+                                                {% else %}
+                                                    Giảm {{ user_voucher.coupon.discount_value|floatformat:"0"|intcomma }}đ
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                        <div class="text-right">
+                                            <button type="button" onclick="deleteSingleVoucher('{{ user_voucher.id }}')"
+                                                    class="text-red-500 hover:text-red-700 p-1">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 {% endfor %}
                             </div>
                             
-                            <!-- Nút xóa voucher đã chọn -->
-                            <div class="flex justify-end mt-4">
+                            <div class="mt-6">
                                 <button type="submit" 
-                                        onclick="return confirm('Xóa các voucher đã chọn?')"
-                                        class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors">
+                                        class="btn-danger">
                                     Xóa voucher đã chọn
                                 </button>
                             </div>
-                            {% else %}
-                            <div class="text-center py-8">
-                                <div class="text-4xl mb-2">🎁</div>
-                                <p class="text-gray-500">Bạn chưa có voucher nào.</p>
-                                <p class="text-sm text-gray-400 mt-1">Hãy theo dõi các chương trình khuyến mãi để nhận voucher nhé!</p>
-                            </div>
-                            {% endif %}
                         </form>
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🎁</div>
+                            <p>Bạn chưa có voucher nào.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Tab: Đơn hàng (Orders) -->
+                <div id="tab-orders" class="{% if active_tab != 'orders' %}hidden{% endif %}">
+                    <div class="profile-content-card">
+                        <h3 class="section-title">Lịch sử đơn hàng</h3>
+                        
+                        {% if orders %}
+                        <div class="space-y-4">
+                            {% for order in orders %}
+                            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <p class="font-semibold text-gray-800">Đơn hàng #{{ order.id }}</p>
+                                        <p class="text-sm text-gray-500">{{ order.created_at|date:"d/m/Y H:i" }}</p>
+                                    </div>
+                                    <span class="px-2 py-1 text-xs rounded font-medium
+                                        {% if order.status == 'completed' %}bg-green-100 text-green-700
+                                        {% elif order.status == 'cancelled' %}bg-red-100 text-red-700
+                                        {% elif order.status == 'processing' %}bg-blue-100 text-blue-700
+                                        {% elif order.status == 'approved' %}bg-purple-100 text-purple-700
+                                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                        {% if order.status == 'pending' %}Chờ duyệt
+                                        {% elif order.status == 'approved' %}Đã duyệt
+                                        {% elif order.status == 'processing' %}Tiếp nhận
+                                        {% elif order.status == 'completed' %}Thành công
+                                        {% elif order.status == 'cancelled' %}Đã hủy{% endif %}
+                                    </span>
+                                </div>
+                                
+                                <!-- Order Items -->
+                                <div class="border-t border-gray-100 pt-3">
+                                    {% for item in order.items.all %}
+                                    <div class="flex items-center gap-3 py-2">
+                                        <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                                            {% if item.product and item.product.image %}
+                                            <img src="{{ item.product.image.url }}" alt="{{ item.product_name }}" class="w-14 h-14 object-contain">
+                                            {% else %}
+                                            <span class="text-2xl">📱</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="font-medium text-gray-800">{{ item.product_name }}</p>
+                                            <p class="text-sm text-gray-500">
+                                                {% if item.storage %}{{ item.storage }}{% endif %}
+                                                {% if item.storage and item.color %} - {% endif %}
+                                                {% if item.color %}{{ item.color }}{% endif %}
+                                                x{{ item.quantity }}
+                                            </p>
+                                        </div>
+                                        <p class="font-medium text-red-500">{{ item.subtotal|floatformat:"0"|intcomma }}đ</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Order Total -->
+                                <div class="border-t border-gray-100 pt-3 mt-2 flex justify-between items-center">
+                                    <div class="text-sm">
+                                        <span class="text-gray-500">Thanh toán:</span>
+                                        <span class="font-medium ml-1
+                                            {% if order.payment_method == 'cod' %}text-blue-600{% else %}text-green-600{% endif %}">
+                                            {% if order.payment_method == 'cod' %}Thanh toán khi nhận hàng{% else %}Thanh toán online{% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-sm text-gray-500">Tổng tiền:</p>
+                                        <p class="text-lg font-bold text-red-500">{{ order.total|floatformat:"0"|intcomma }}đ</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Actions -->
+                                <div class="mt-3 flex gap-2">
+                                    <a href="{% url 'order_detail' order.id %}" 
+                                       class="btn-secondary">
+                                        Xem chi tiết
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <p>Bạn chưa có đơn hàng nào.</p>
+                            <a href="/" class="btn-primary mt-4 inline-block">Mua sắm ngay</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Tab: Góp ý (Feedback) -->
+                <div id="tab-feedback" class="{% if active_tab != 'feedback' %}hidden{% endif %}">
+                    <div class="profile-content-card">
+                        <h3 class="section-title">Góp ý của bạn</h3>
+                        
+                        <!-- Feedback Form -->
+                        <form method="POST" action="{% url 'feedback_create' %}" class="mb-6">
+                            {% csrf_token %}
+                            <div class="mb-4">
+                                <label class="profile-label">Tiêu đề</label>
+                                <input type="text" name="title" 
+                                       placeholder="Nhập tiêu đề góp ý"
+                                       class="profile-input" required>
+                            </div>
+                            <div class="mb-4">
+                                <label class="profile-label">Nội dung</label>
+                                <textarea name="content" rows="4"
+                                          placeholder="Nhập nội dung góp ý của bạn..."
+                                          class="profile-input" required></textarea>
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                Gửi góp ý
+                            </button>
+                        </form>
+                        
+                        <!-- Feedback List -->
+                        {% if feedbacks %}
+                        <div class="border-t border-gray-200 pt-6">
+                            <h4 class="font-semibold text-gray-700 mb-4">Lịch sử góp ý</h4>
+                            <div class="space-y-4">
+                                {% for feedback in feedbacks %}
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <div>
+                                            <p class="font-semibold text-gray-800">{{ feedback.title }}</p>
+                                            <p class="text-sm text-gray-500">{{ feedback.created_at|date:"d/m/Y H:i" }}</p>
+                                        </div>
+                                        {% if feedback.is_responded %}
+                                        <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">Đã phản hồi</span>
+                                        {% else %}
+                                        <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">Chờ phản hồi</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-gray-600 mb-2">{{ feedback.content }}</p>
+                                    
+                                    {% if feedback.is_responded %}
+                                    <div class="bg-blue-50 rounded-lg p-3 mt-3">
+                                        <p class="text-sm font-medium text-blue-800 mb-1">
+                                            <i class="fas fa-reply mr-1"></i>Phản hồi từ QHUN22 ({{ feedback.responded_at|date:"d/m/Y H:i" }}):
+                                        </p>
+                                        <p class="text-sm text-gray-700">{{ feedback.admin_response }}</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<!-- JavaScript -->
-<script>
-    function showTab(tab) {
-        // Hide all tabs
-        document.getElementById('tab-overview').classList.add('hidden');
-        document.getElementById('tab-addresses').classList.add('hidden');
-        document.getElementById('tab-vouchers').classList.add('hidden');
-        
-        // Reset button styles
-        document.getElementById('btn-overview').className = 'w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors hover:bg-gray-50 text-gray-600';
-        document.getElementById('btn-addresses').className = 'w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors hover:bg-gray-50 text-gray-600';
-        document.getElementById('btn-vouchers').className = 'w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors hover:bg-gray-50 text-gray-600';
-        
-        // Show selected tab
-        document.getElementById('tab-' + tab).classList.remove('hidden');
-        
-        // Highlight selected button
-        document.getElementById('btn-' + tab).className = 'w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors bg-blue-600 text-white';
-        
-        // Save preference to localStorage
-        localStorage.setItem('profileTab', tab);
-    }
-    
-    // Load saved tab preference
-    document.addEventListener('DOMContentLoaded', function() {
-        const savedTab = localStorage.getItem('profileTab');
-        if (savedTab) {
-            showTab(savedTab);
-        }
-    });
-    
-    function setDefaultAddress(addressId) {
-        if (confirm('Đặt địa chỉ này làm mặc định?')) {
-            fetch(`/profile/address/default/${addressId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            }).then(response => {
-                if (response.ok) location.reload();
-            });
-        }
-    }
-    
-    // Chọn địa chỉ (click vào card cũng chọn được radio)
-    function selectAddress(addressId) {
-        document.getElementById('addr_' + addressId).checked = true;
-    }
-    
-    // Xóa địa chỉ đã chọn
-    function deleteSelectedAddress() {
-        const selectedRadio = document.querySelector('input[name="default_address"]:checked');
-        if (!selectedRadio) {
-            alert('Vui lòng chọn một địa chỉ để xóa!');
-            return;
-        }
-        if (confirm('Xóa địa chỉ này?')) {
-            document.getElementById('deleteAddressId').value = selectedRadio.value;
-            document.getElementById('deleteForm').action = '/profile/address/delete/' + selectedRadio.value + '/';
-            document.getElementById('deleteForm').submit();
-        }
-    }
-    
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-</script>
+{% block extra_js %}
+<script src="{% static 'js/profile.js' %}"></script>
 {% endblock %}

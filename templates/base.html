@@ -25,7 +25,10 @@
     <!-- Static files -->
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-
+    
+    <!-- Extra CSS block for child templates -->
+    {% block extra_css %}{% endblock %}
+    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -209,6 +212,9 @@
         {% endfor %}
     </div>
     {% endif %}
+    
+    <!-- Extra JS block for child templates -->
+    {% block extra_js %}{% endblock %}
     
 </body>
 </html>

@@ -612,3 +612,34 @@ class OrderItem(models.Model):
         """Thành tiền."""
         return self.price * self.quantity
 
+
+class Feedback(models.Model):
+    """
+    Model cho góp ý của khách hàng.
+    """
+    
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='feedbacks',
+        verbose_name="Người gửi"
+    )
+    title = models.CharField(max_length=200, verbose_name="Tiêu đề")
+    content = models.TextField(verbose_name="Nội dung")
+    admin_response = models.TextField(blank=True, null=True, verbose_name="Phản hồi từ admin")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ngày gửi")
+    responded_at = models.DateTimeField(blank=True, null=True, verbose_name="Ngày phản hồi")
+    
+    class Meta:
+        verbose_name = "Góp ý"
+        verbose_name_plural = "Góp ý"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+    
+    @property
+    def is_responded(self):
+        """Kiểm tra đã được phản hồi chưa."""
+        return bool(self.admin_response)
+
