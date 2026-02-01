@@ -346,6 +346,11 @@ class Coupon(models.Model):
         blank=True,
         verbose_name="Hết hạn"
     )
+    max_product_limit = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Sản phẩm tối đa cùng lúc",
+        help_text="0 = không giới hạn. Ví dụ: set 1 thì chỉ áp dụng cho 1 sản phẩm, set 3 thì áp dụng cho tối đa 3 sản phẩm."
+    )
     
     class Meta:
         verbose_name = "Mã giảm giá"
@@ -357,9 +362,13 @@ class Coupon(models.Model):
         else:
             return f"{self.code} - {self.discount_value:,}đ OFF"
     
-    def calculate_discount(self, total_amount):
+    def calculate_discount(self, total_amount, product_count=0):
         """Tính số tiền giảm giá."""
         if not self.is_active:
+            return 0
+        
+        # Kiểm tra số sản phẩm tối đa
+        if self.max_product_limit > 0 and product_count > self.max_product_limit:
             return 0
         
         # Kiểm tra đơn hàng tối thiểu
@@ -368,9 +377,6 @@ class Coupon(models.Model):
         
         if self.discount_type == 'percent':
             discount = total_amount * self.discount_value / 100
-            # Giới hạn giảm tối đa
-            if self.max_discount > 0 and discount > self.max_discount:
-                discount = self.max_discount
             return int(discount)
         else:
             # Giảm cố định, không vượt quá tổng tiền

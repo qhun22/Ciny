@@ -7,6 +7,7 @@ Các view sử dụng function-based views để dễ hiểu cho sinh viên.
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseRedirect
+from django.urls import reverse
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -454,6 +455,26 @@ def profile_view(request):
                 user.profile.is_phone_verified = True  # Khóa số điện thoại sau khi cập nhật
                 user.profile.save()
                 messages.success(request, 'Cập nhật số điện thoại thành công! Số điện thoại đã được khóa.')
+                
+                # Tặng voucher QHUN22 cho user khi xác thực số điện thoại
+                try:
+                    qhun22_coupon = Coupon.objects.get(code='QHUN22', is_active=True)
+                    
+                    # Kiểm tra xem user đã có voucher này chưa
+                    existing_user_voucher = UserVoucher.objects.filter(
+                        user=user,
+                        coupon=qhun22_coupon
+                    ).exists()
+                    
+                    if not existing_user_voucher:
+                        UserVoucher.objects.create(
+                            user=user,
+                            coupon=qhun22_coupon
+                        )
+                        messages.success(request, 'Chúc mừng! Bạn đã nhận được voucher QHUN22!')
+                except Coupon.DoesNotExist:
+                    pass  # Voucher QHUN22 không tồn tại, bỏ qua
+                    
             except Exception as e:
                 messages.error(request, 'Có lỗi xảy ra. Vui lòng thử lại.')
         
@@ -531,7 +552,7 @@ def profile_view(request):
         'phone_number': phone_number,
         'is_phone_verified': is_phone_verified,
         'active_tab': active_tab,
-        'vouchers': vouchers,
+        'user_vouchers': vouchers,
         'orders': orders,
         'feedbacks': feedbacks,
         'page_title': f'Profile - {request.user.username}',
@@ -599,7 +620,7 @@ def address_set_default(request):
     else:
         messages.warning(request, 'Vui lòng chọn địa chỉ mặc định.')
     
-    return redirect('profile' + '?tab=addresses')
+    return HttpResponseRedirect(reverse('profile') + '?tab=addresses')
 
 
 @require_POST
@@ -663,7 +684,7 @@ def voucher_delete(request):
     else:
         messages.warning(request, 'Vui lòng chọn voucher cần xóa.')
     
-    return redirect('profile' + '?tab=vouchers')
+    return HttpResponseRedirect(reverse('profile') + '?tab=vouchers')
 
 
 @user_passes_test(is_admin)
@@ -1005,8 +1026,23 @@ def cart_detail(request):
     """
     cart = get_or_create_cart(request)
     
+    # Lấy coupon từ session (nếu có)
+    applied_coupon = None
+    coupon_code = request.session.get('applied_coupon')
+    if coupon_code:
+        from django.utils import timezone
+        from django.db.models import Q
+        applied_coupon = Coupon.objects.filter(
+            code=coupon_code,
+            is_active=True
+        ).filter(
+            Q(expires_at__isnull=True) | 
+            Q(expires_at__gt=timezone.now())
+        ).first()
+    
     context = {
         'cart': cart,
+        'applied_coupon': applied_coupon,
         'page_title': 'Giỏ hàng - PhoneShop',
     }
     
@@ -1383,7 +1419,21 @@ def apply_coupon(request):
     selected_items = request.session.get('selected_cart_items', list(cart.items.values_list('id', flat=True)))
     cart_items = cart.items.filter(id__in=selected_items)
     subtotal = sum(item.subtotal for item in cart_items)
-    discount = coupon.calculate_discount(subtotal)
+    product_count = cart_items.count()
+    
+    # Tính giảm giá với kiểm tra số sản phẩm tối đa
+    discount = coupon.calculate_discount(subtotal, product_count)
+    
+    # Nếu discount = 0 do vượt quá số sản phẩm tối đa
+    if discount == 0 and coupon.max_product_limit > 0 and product_count > coupon.max_product_limit:
+        # Xóa coupon khỏi session
+        if 'applied_coupon' in request.session:
+            del request.session['applied_coupon']
+        return JsonResponse({
+            'success': False, 
+            'message': f'Voucher chỉ áp dụng cho tối đa {coupon.max_product_limit} sản phẩm. Bạn đang chọn {product_count} sản phẩm.'
+        })
+    
     total = subtotal - discount
     
     return JsonResponse({
@@ -1512,7 +1562,7 @@ def feedback_create(request):
             )
             messages.success(request, 'Góp ý của bạn đã được gửi! Chúng tôi sẽ phản hồi sớm nhất.')
         
-        return redirect('profile' + '?tab=feedback')
+        return redirect('profile')
     
     return redirect('profile')
 
@@ -1603,8 +1653,9 @@ def admin_voucher_add(request):
         description = request.POST.get('description', '').strip()
         discount_type = request.POST.get('discount_type')
         discount_value = int(request.POST.get('discount_value', '0') or 0)
-        max_discount = int(request.POST.get('max_discount', '0') or 0)
         min_order = int(request.POST.get('min_order', '0') or 0)
+        max_usage_per_user = int(request.POST.get('max_usage_per_user', '1') or 1)
+        max_product_limit = int(request.POST.get('max_product_limit', '0') or 0)
         usage_type = request.POST.get('usage_type', 'all')
         specific_email = request.POST.get('specific_email', '').strip() if usage_type == 'specific' else None
         is_indefinite = request.POST.get('is_indefinite') == 'on'
@@ -1612,19 +1663,41 @@ def admin_voucher_add(request):
         is_active = request.POST.get('is_active') == 'on'
         
         if code and discount_value:
-            Coupon.objects.create(
+            coupon = Coupon.objects.create(
                 code=code,
                 description=description,
                 discount_type=discount_type,
                 discount_value=discount_value,
-                max_discount=max_discount,
                 min_order=min_order,
+                max_usage_per_user=max_usage_per_user,
+                max_product_limit=max_product_limit,
                 usage_type=usage_type,
                 specific_email=specific_email,
                 expires_at=None if is_indefinite else (expires_at if expires_at else None),
                 is_active=is_active
             )
-            messages.success(request, 'Tạo voucher thành công!')
+            
+            # Nếu là voucher cho email cụ thể, tự động gán cho user đó
+            if usage_type == 'specific' and specific_email:
+                try:
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
+                    target_user = User.objects.get(email=specific_email)
+                    
+                    # Kiểm tra xem user đã có voucher này chưa
+                    existing = UserVoucher.objects.filter(user=target_user, coupon=coupon).exists()
+                    if not existing:
+                        UserVoucher.objects.create(user=target_user, coupon=coupon)
+                        messages.success(request, f'Tạo voucher thành công! Đã gán cho {specific_email}')
+                    else:
+                        messages.success(request, f'Tạo voucher thành công! User đã có voucher này')
+                except User.DoesNotExist:
+                    messages.warning(request, f'Tạo voucher thành công! Nhưng user {specific_email} không tồn tại')
+                except Exception as e:
+                    messages.warning(request, f'Tạo voucher thành công! Lỗi gán cho user: {str(e)}')
+            else:
+                messages.success(request, 'Tạo voucher thành công!')
+            
             return redirect('admin_vouchers')
         else:
             messages.error(request, 'Vui lòng nhập đầy đủ thông tin!')
@@ -1648,8 +1721,9 @@ def admin_voucher_edit(request, voucher_id):
         voucher.description = request.POST.get('description', '').strip()
         voucher.discount_type = request.POST.get('discount_type')
         voucher.discount_value = int(request.POST.get('discount_value', '0') or 0)
-        voucher.max_discount = int(request.POST.get('max_discount', '0') or 0)
         voucher.min_order = int(request.POST.get('min_order', '0') or 0)
+        voucher.max_usage_per_user = int(request.POST.get('max_usage_per_user', '1') or 1)
+        voucher.max_product_limit = int(request.POST.get('max_product_limit', '0') or 0)
         voucher.usage_type = request.POST.get('usage_type', 'all')
         voucher.specific_email = request.POST.get('specific_email', '').strip() if request.POST.get('usage_type') == 'specific' else None
         is_indefinite = request.POST.get('is_indefinite') == 'on'
@@ -1684,6 +1758,7 @@ def admin_feedbacks(request):
     """
     Trang quản lý góp ý (admin).
     """
+    from django.utils import timezone
     feedbacks = Feedback.objects.all().order_by('-created_at')
     
     if request.method == 'POST':

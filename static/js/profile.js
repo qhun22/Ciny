@@ -130,6 +130,17 @@ function getCookie(name) {
     return cookieValue;
 }
 
+/**
+ * Toggle all voucher checkboxes
+ * @param {HTMLInputElement} checkbox - Master checkbox
+ */
+function toggleAllVouchers(checkbox) {
+    const checkboxes = document.querySelectorAll('.voucher-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Load saved tab preference

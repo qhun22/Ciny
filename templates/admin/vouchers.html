@@ -87,6 +87,8 @@
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Mô tả</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Giảm giá</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Đơn tối thiểu</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Giới hạn/user</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Sản phẩm tối đa</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Ai có thể dùng</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Hạn sử dụng</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Trạng thái</th>
@@ -115,6 +117,20 @@
                                     </td>
                                     <td class="py-3 px-4 text-gray-600">
                                         {{ voucher.min_order|floatformat:"0"|intcomma }}đ
+                                    </td>
+                                    <td class="py-3 px-4 text-gray-600">
+                                        {% if voucher.max_usage_per_user > 0 %}
+                                        {{ voucher.max_usage_per_user }} lần
+                                        {% else %}
+                                        <span class="text-gray-400">Không giới hạn</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4 text-gray-600">
+                                        {% if voucher.max_product_limit > 0 %}
+                                        {{ voucher.max_product_limit }} sản phẩm
+                                        {% else %}
+                                        <span class="text-gray-400">Không giới hạn</span>
+                                        {% endif %}
                                     </td>
                                     <td class="py-3 px-4">
                                         {% if voucher.usage_type == 'specific' %}
