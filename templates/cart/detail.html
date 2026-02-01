@@ -5,7 +5,17 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-8">Giỏ hàng của bạn</h1>
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+        </div>
+        <h1 class="text-3xl font-bold text-gray-800">Giỏ hàng của bạn</h1>
+        <p class="text-gray-500 mt-2">Quản lý sản phẩm bạn đã thêm vào giỏ</p>
+    </div>
     
     {% if cart.items.exists %}
     <div class="flex flex-col lg:flex-row gap-8">
@@ -191,13 +201,28 @@
     </div>
     {% else %}
     <!-- Giỏ hàng trống -->
-    <div class="text-center py-16">
-        <div class="text-6xl mb-4">🛒</div>
-        <h2 class="text-2xl font-semibold text-gray-600 mb-4">Giỏ hàng trống</h2>
-        <p class="text-gray-500 mb-8">Bạn chưa có sản phẩm nào trong giỏ hàng.</p>
+    <div class="flex flex-col items-center justify-center py-16">
+        <div class="relative mb-6">
+            <div class="w-28 h-28 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
+                          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+            </div>
+            <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </div>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Giỏ hàng trống</h2>
+        <p class="text-gray-500 mb-8 text-center">Bạn chưa có sản phẩm nào trong giỏ hàng.<br>Hãy tiếp tục mua sắm để tìm kiếm những sản phẩm tuyệt vời!</p>
         <a href="{% url 'home' %}" 
-           class="inline-block px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-blue-600 transition">
-            Quay lại mua sắm
+           class="inline-flex items-center gap-2 px-8 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            <span>Quay lại mua sắm</span>
         </a>
     </div>
     {% endif %}

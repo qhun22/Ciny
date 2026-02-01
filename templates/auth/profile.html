@@ -182,42 +182,50 @@
 
                 <!-- Tab: Sổ địa chỉ (Addresses) -->
                 <div id="tab-addresses" class="{% if active_tab != 'addresses' %}hidden{% endif %}">
-                    <div class="profile-content-card">
+                    
+                    <!-- Box 1: Thêm địa chỉ mới -->
+                    <div class="profile-content-card mb-6">
                         <h3 class="section-title">Địa chỉ của bạn</h3>
                         
-                        <!-- Add Address Form -->
                         <form method="POST" action="{% url 'address_add' %}">
                             {% csrf_token %}
-                            <div class="input-group">
-                                <div class="input-group-item">
+                            <div class="space-y-4">
+                                <div>
                                     <label class="profile-label">Nhập họ tên</label>
                                     <input type="text" name="full_name" required
                                            placeholder="Nguyễn Văn A"
                                            class="profile-input">
                                 </div>
-                                <div class="input-group-item">
+                                <div>
                                     <label class="profile-label">Số điện thoại</label>
                                     <input type="text" name="phone" required
                                            placeholder="0123 456 789"
                                            class="profile-input">
                                 </div>
-                                <div class="input-group-item">
+                                <div>
                                     <label class="profile-label">Địa chỉ chi tiết</label>
                                     <input type="text" name="address" required
                                            placeholder="Số nhà, đường, phường/xã"
                                            class="profile-input">
                                 </div>
                             </div>
+                            <div class="mt-4">
+                                <button type="submit" class="btn-primary">
+                                    Lưu
+                                </button>
+                            </div>
                         </form>
+                    </div>
+                    
+                    <!-- Box 2: Sổ địa chỉ đã lưu -->
+                    <div class="profile-content-card">
+                        <h3 class="section-title">Sổ địa chỉ của bạn</h3>
                         
-                        <!-- Address List with Radio Buttons -->
                         {% if addresses %}
                         <form method="POST" action="{% url 'address_set_default' %}" id="addressForm">
                             {% csrf_token %}
                             
-                            <h4 class="font-medium text-gray-700 mt-6 mb-3">Chọn địa chỉ mặc định</h4>
-                            
-                            <div class="address-list">
+                            <div class="space-y-3">
                                 {% for addr in addresses %}
                                 <div class="address-card {% if addr.is_default %}active{% endif %}"
                                      onclick="selectAddress({{ addr.id }})">
@@ -228,8 +236,8 @@
                                                class="profile-radio">
                                         <div class="flex-1">
                                             <p class="font-medium text-gray-800">{{ addr.full_name }}</p>
-                                            <p class="text-gray-600 text-sm"><span class="address-icon">📞</span> {{ addr.phone }}</p>
-                                            <p class="text-gray-600 text-sm"><span class="address-icon">📍</span> {{ addr.address }}</p>
+                                            <p class="text-gray-600 text-sm">📞 {{ addr.phone }}</p>
+                                            <p class="text-gray-600 text-sm">📍 {{ addr.address }}</p>
                                         </div>
                                         {% if addr.is_default %}
                                         <span class="default-badge">Mặc định</span>
@@ -240,13 +248,9 @@
                             </div>
                             
                             <!-- Buttons -->
-                            <div class="form-actions">
-                                <div class="form-actions-start">
-                                    <a href="{% url 'address_add' %}" class="btn-secondary">
-                                        Thêm địa chỉ mới
-                                    </a>
-                                </div>
-                                <div class="form-actions-end">
+                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                                
+                                <div class="flex gap-2">
                                     <button type="button" onclick="deleteSelectedAddress()" class="btn-danger">
                                         Xóa
                                     </button>

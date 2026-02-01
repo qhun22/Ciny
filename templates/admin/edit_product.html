@@ -114,38 +114,38 @@
                             Quay lai
                         </a>
                     </div>
-                </div>
+        </div>
 
-                <!-- Form san pham -->
+        <!-- Form san pham -->
                 <div class="admin-card">
                     <form method="POST" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        
-                        <!-- Thong tin co ban -->
+            {% csrf_token %}
+
+            <!-- Thong tin co ban -->
                         <h2 class="admin-card-title">Thong tin co ban</h2>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Hang san xuat -->
-                            <div>
-                                <label class="block text-gray-700 mb-2">Hang san xuat *</label>
-                                <input type="text" name="brand" 
-                                       value="{{ product.brand|default:'' }}" required
-                                       placeholder="Vi du: Apple, Samsung, Xiaomi"
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Hang san xuat -->
+                    <div>
+                        <label class="block text-gray-700 mb-2">Hang san xuat *</label>
+                        <input type="text" name="brand" 
+                               value="{{ product.brand|default:'' }}" required
+                               placeholder="Vi du: Apple, Samsung, Xiaomi"
                                        class="admin-input">
-                            </div>
-                            
-                            <!-- Ten san pham -->
-                            <div>
-                                <label class="block text-gray-700 mb-2">Ten san pham *</label>
-                                <input type="text" name="name" 
-                                       value="{{ product.name|default:'' }}" required
-                                       placeholder="Vi du: iPhone 15 Pro Max"
+                    </div>
+                    
+                    <!-- Ten san pham -->
+                    <div>
+                        <label class="block text-gray-700 mb-2">Ten san pham *</label>
+                        <input type="text" name="name" 
+                               value="{{ product.name|default:'' }}" required
+                               placeholder="Vi du: iPhone 15 Pro Max"
                                        class="admin-input">
-                            </div>
-                        </div>
-                        
+                    </div>
+                </div>
+                
                         <!-- Anh chinh - CO NUT X DE XOA -->
-                        <div class="mt-4">
+                <div class="mt-4">
                             <label class="block text-gray-700 mb-2">Anh chinh (Hover de xoa)</label>
                             {% if product.main_image %}
                             <div class="image-item" style="display: inline-block; margin-bottom: 8px; position: relative;">
@@ -158,12 +158,12 @@
                                         title="Xoa anh nay">
                                     X
                                 </button>
-                            </div>
+                    </div>
                             <input type="hidden" name="delete_main_image" id="deleteMainImageInput" value="false">
-                            {% endif %}
+                    {% endif %}
                             <input type="file" name="main_image" accept="image/*"
                                    class="admin-input">
-                        </div>
+                </div>
                         
                         <!-- Mo ta san pham -->
                         <div class="mt-4">
@@ -171,34 +171,34 @@
                             <textarea name="description" rows="5" required
                                       placeholder="Nhap mo ta san pham..."
                                       class="admin-input">{{ product.description|default:'' }}</textarea>
-                        </div>
-                        
+            </div>
+
                         <!-- Thong tin gia ca -->
                         <h2 class="admin-card-title mt-6">Thong tin gia ca</h2>
-                        
+                
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <!-- Gia goc -->
-                            <div>
-                                <label class="block text-gray-700 mb-2">Gia goc (VND) *</label>
+                    <!-- Gia goc -->
+                    <div>
+                        <label class="block text-gray-700 mb-2">Gia goc (VND) *</label>
                                 <input type="number" name="original_price" id="originalPrice"
                                        value="{{ product.original_price|default:0 }}" required
                                        min="0"
                                        placeholder="Nhap gia goc"
                                        class="admin-input"
                                        oninput="calculateSalePrice()">
-                            </div>
-                            
+                    </div>
+                    
                             <!-- Phan tram giam gia - TU DONG DIEN VAO + TINH REAL-TIME -->
-                            <div>
-                                <label class="block text-gray-700 mb-2">Phan tram giam gia (%) *</label>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Phan tram giam gia (%) *</label>
                                 <input type="number" name="discount_percent" id="discountPercent"
-                                       value="{{ product.discount_percent|default:0 }}" required
+                               value="{{ product.discount_percent|default:0 }}" required
                                        min="0" max="100" step="0.1"
                                        placeholder="Vi du: 16"
                                        class="admin-input"
                                        oninput="calculateSalePrice()">
                                 <p class="text-xs text-gray-500 mt-1">Nhap % de tinh gia KM</p>
-                            </div>
+                    </div>
                             
                             <!-- Gia khuyen mai (hien thi tu dong) -->
                             <div>
@@ -206,8 +206,8 @@
                                 <input type="text" id="salePriceDisplay"
                                        value="{{ product.sale_price|default:0|floatformat:'0'|intcomma }} VND" disabled
                                        class="admin-input bg-gray-100 text-red-600 font-bold">
-                            </div>
-                        </div>
+                </div>
+            </div>
                         
                         <!-- Ton kho -->
                         <div class="mt-4">
@@ -219,56 +219,56 @@
                                    class="admin-input">
                             <p class="text-xs text-gray-500 mt-1">So luong san pham con lai trong kho</p>
                         </div>
-                        
-                        <!-- Thong tin bao hanh va dac diem -->
+
+            <!-- Thong tin bao hanh va dac diem -->
                         <h2 class="admin-card-title mt-6">Bao hanh va dac diem</h2>
-                        
+                
                         <div>
-                            <label class="block text-gray-700 mb-2">Thoi gian bao hanh (thang)</label>
+                    <label class="block text-gray-700 mb-2">Thoi gian bao hanh (thang)</label>
                             <input type="number" name="warranty_months" 
                                    value="{{ product.warranty_months|default:12 }}" required
                                    min="0"
                                    class="admin-input">
-                        </div>
-                        
-                        <!-- Checkboxes -->
+                </div>
+                
+                <!-- Checkboxes -->
                         <div class="flex flex-wrap gap-4 mt-4">
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" name="free_shipping" 
-                                       {% if product.free_shipping %}checked{% endif %}
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" name="free_shipping" 
+                               {% if product.free_shipping %}checked{% endif %}
                                        class="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500">
-                                <span class="ml-2">Mien phi giao hang</span>
-                            </label>
-                            
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" name="open_box_check"
-                                       {% if product.open_box_check %}checked{% endif %}
+                        <span class="ml-2">Mien phi giao hang</span>
+                    </label>
+                    
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" name="open_box_check"
+                               {% if product.open_box_check %}checked{% endif %}
                                        class="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500">
-                                <span class="ml-2">Mo hop kiem tra</span>
-                            </label>
-                            
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" name="return_30_days"
-                                       {% if product.return_30_days %}checked{% endif %}
+                        <span class="ml-2">Mo hop kiem tra</span>
+                    </label>
+                    
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" name="return_30_days"
+                               {% if product.return_30_days %}checked{% endif %}
                                        class="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500">
-                                <span class="ml-2">Doi tra trong 30 ngay</span>
-                            </label>
-                        </div>
-                        
-                        <!-- Thong so ky thuat -->
+                        <span class="ml-2">Doi tra trong 30 ngay</span>
+                    </label>
+                </div>
+                
+                <!-- Thong so ky thuat -->
                         <div class="mt-6">
-                            <label class="block text-gray-700 mb-2">Thong so ky thuat *</label>
-                            <textarea name="specifications" rows="5" required
-                                      placeholder="Nhap thong so ky thuat..."
+                    <label class="block text-gray-700 mb-2">Thong so ky thuat *</label>
+                    <textarea name="specifications" rows="5" required
+                              placeholder="Nhap thong so ky thuat..."
                                       class="admin-input">{{ product.specifications|default:'' }}</textarea>
-                        </div>
-                        
+            </div>
+
                         <!-- Hinh anh chi tiet hien co - CO NUT X DE XOA -->
                         {% if product.images.all %}
                         <div class="mt-6">
                             <label class="block text-gray-700 mb-2">Hinh anh chi tiet hien co (Hover de xoa)</label>
                             <div class="flex flex-wrap gap-3">
-                                {% for img in product.images.all %}
+                    {% for img in product.images.all %}
                                 <div class="image-item">
                                     <img src="{{ img.image.url }}" 
                                          alt="Anh chi tiet"
@@ -279,26 +279,26 @@
                                             title="Xoa anh nay">
                                         X
                                     </button>
-                                </div>
-                                {% endfor %}
+                    </div>
+                    {% endfor %}
                             </div>
                             <input type="hidden" name="delete_images" id="deleteImagesInput" value="">
-                        </div>
-                        {% endif %}
-                        
+                </div>
+                {% endif %}
+                
                         <!-- Them anh chi tiet moi -->
                         <div class="mt-4">
                             <label class="block text-gray-700 mb-2">Them anh chi tiet moi</label>
-                            <input type="file" name="detail_images" accept="image/*" multiple
+                <input type="file" name="detail_images" accept="image/*" multiple
                                    class="admin-input">
-                        </div>
-                        
+            </div>
+
                         <!-- Tuy chon bo nho hien co - HOVER DE XOA -->
                         {% if product.storage_options.all %}
                         <div class="mt-6">
                             <label class="block text-gray-700 mb-2">Tuy chon bo nho hien co (Hover de xoa)</label>
                             <div class="flex flex-wrap gap-2" id="storageDisplayList">
-                                {% for storage in product.storage_options.all %}
+                    {% for storage in product.storage_options.all %}
                                 <div class="storage-item image-item flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg relative">
                                     <span class="font-medium">{{ storage.storage }}</span>
                                     <span class="text-gray-500">-</span>
@@ -308,78 +308,78 @@
                                             class="delete-btn"
                                             title="Xoa tuy chon nay">
                                         X
-                                    </button>
-                                </div>
-                                {% endfor %}
+                        </button>
+                    </div>
+                        {% endfor %}
                             </div>
                             <input type="hidden" name="delete_storages" id="deleteStoragesInput" value="">
-                        </div>
-                        {% endif %}
+                    </div>
+                    {% endif %}
                         
                         <!-- Cap nhat tuy chon bo nho - AN HIEN PHAN THEM MOI -->
                         <div class="mt-4">
                             <label class="block text-gray-700 mb-2">Them tuy chon bo nho (nhan + de them moi)</label>
                             <div id="storageContainer" class="space-y-3">
                                 <!-- Chi hien thi khi nguoi dung an "Them" -->
-                            </div>
-                            <button type="button" onclick="addStorageRow()"
+                </div>
+                <button type="button" onclick="addStorageRow()"
                                     class="mt-2 text-blue-500 hover:underline">
-                                + Them tuy chon bo nho
-                            </button>
-                        </div>
-                        
+                    + Them tuy chon bo nho
+                </button>
+            </div>
+
                         <!-- Tuy chon mau sac hien co - HOVER DE XOA -->
                         {% if product.color_options.all %}
                         <div class="mt-6">
                             <label class="block text-gray-700 mb-2">Tuy chon mau sac hien co (Hover de xoa)</label>
                             <div class="flex flex-wrap gap-2" id="colorDisplayList">
-                                {% for color in product.color_options.all %}
+                    {% for color in product.color_options.all %}
                                 <div class="color-item image-item flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg relative">
-                                    {% if color.color_image %}
+                                {% if color.color_image %}
                                     <img src="{{ color.color_image.url }}" 
                                          alt="{{ color.color_name }}"
                                          class="w-8 h-8 rounded-full object-cover">
-                                    {% endif %}
+                                {% endif %}
                                     <span class="font-medium">{{ color.color_name }}</span>
                                     <button type="button" 
                                             onclick="deleteColor({{ color.id }})"
                                             class="delete-btn"
                                             title="Xoa tuy chon nay">
                                         X
-                                    </button>
-                                </div>
-                                {% endfor %}
+                        </button>
+                    </div>
+                        {% endfor %}
                             </div>
                             <input type="hidden" name="delete_colors" id="deleteColorsInput" value="">
-                        </div>
-                        {% endif %}
+                    </div>
+                    {% endif %}
                         
                         <!-- Them tuy chon mau sac - AN HIEN PHAN THEM MOI -->
                         <div class="mt-4">
                             <label class="block text-gray-700 mb-2">Them tuy chon mau sac (nhan + de them moi)</label>
                             <div id="colorContainer" class="space-y-3">
                                 <!-- Chi hien thi khi nguoi dung an "Them" -->
-                            </div>
-                            <button type="button" onclick="addColorRow()"
+                </div>
+                <button type="button" onclick="addColorRow()"
                                     class="mt-2 text-blue-500 hover:underline">
-                                + Them tuy chon mau sac
-                            </button>
-                        </div>
-                        
+                    + Them tuy chon mau sac
+                </button>
+            </div>
+
                         <!-- Nut hanh dong -->
                         <div class="flex gap-4 mt-6">
                             <button type="submit" 
                                     class="btn-edit" style="background-color: #16a34a;">
                                 Luu thay doi
                             </button>
-                            <a href="{% url 'admin_product_list' %}" 
+                <a href="{% url 'admin_product_list' %}" 
                                class="btn-edit" style="background-color: #6b7280;">
-                                Huy
-                            </a>
-                        </div>
-                    </form>
-                </div>
+                    Huy
+                </a>
             </div>
+        </form>
+    </div>
+</div>
         </div>
     </div>
 </div>

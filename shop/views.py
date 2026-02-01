@@ -23,15 +23,15 @@ def home(request):
     Trang chủ - Hiển thị danh sách sản phẩm.
     Mỗi sản phẩm hiển thị: ảnh chính, tên, giá gốc (gạch ngang), giá khuyến mãi, phần trăm giảm giá.
     """
-    # Lấy tất cả sản phẩm, sắp xếp theo ngày tạo mới nhất
-    products = Product.objects.all()
+    # Lấy tối đa 15 sản phẩm, sắp xếp theo ngày tạo mới nhất
+    products = Product.objects.all().order_by('-created_at')[:15]
 
     # Lấy sản phẩm khuyến mãi đặc biệt (có giảm giá)
     special_promotions = []
     show_promotion = False
 
     # Lấy tối đa 5 sản phẩm có discount_percent > 0
-    promoted_products = products.filter(discount_percent__gt=0).order_by('-discount_percent')[:5]
+    promoted_products = Product.objects.filter(discount_percent__gt=0).order_by('-discount_percent')[:5]
 
     if promoted_products.exists():
         show_promotion = True

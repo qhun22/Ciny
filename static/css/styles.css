@@ -8,24 +8,31 @@ html {
     scroll-behavior: smooth;
 }
 
-/* Custom scrollbar cho các phần tử có overflow */
+/* Custom scrollbar - Ẩn khi không dùng, hiện khi hover */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 ::-webkit-scrollbar-track {
     background: #f1f1f1;
-    border-radius: 4px;
+    border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
+    background: #999292;
+    border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #a1a1a1;
+    background: #999292;
+}
+
+/* Hiện scrollbar khi hover */
+*:hover::-webkit-scrollbar {
+    opacity: 1;
 }
 
 /* Animation cho product cards */

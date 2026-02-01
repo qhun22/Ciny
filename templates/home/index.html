@@ -266,52 +266,55 @@
 {% endif %}
 
 <!-- Danh sach san pham -->
-<section id="products" class="py-12">
-    <div class="container mx-auto px-4">
-        <!-- Tiêu đề với hiệu ứng -->
-        <div class="flex items-center justify-center gap-4 mb-8">
-            <div class="flex-1 h-px bg-gradient-to-l from-primary to-transparent max-w-[100px]"></div>
-            <h2 class="text-xl font-bold text-dark whitespace-nowrap">SẢN PHẨM NỔI BẬT</h2>
-            <div class="flex-1 h-px bg-gradient-to-r from-primary to-transparent max-w-[100px]"></div>
+<section id="products" class="py-6">
+    <div class="max-w-7xl mx-auto px-4">
+        <!-- Tieu de voi hieu ung -->
+        <div class="flex items-center justify-center gap-4 mb-6">
+            <div class="flex-1 h-px bg-gradient-to-l from-primary to-transparent max-w-[80px]"></div>
+            <h2 class="text-xl font-bold text-dark whitespace-nowrap">SAN PHAM NOI BAT</h2>
+            <div class="flex-1 h-px bg-gradient-to-r from-primary to-transparent max-w-[80px]"></div>
         </div>
         
         {% if products %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {% for product in products %}
-            <a href="{% url 'product_detail' product.id %}" class="group">
-                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition duration-300">
+            <a href="{% url 'product_detail' product.id %}" class="group block no-underline">
+                <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg hover:border-gray-300 hover:-translate-y-1 transition-all duration-300">
                     <!-- Hinh anh san pham -->
-                    <div class="relative">
-                        <img src="{{ product.main_image.url }}" 
-                             alt="{{ product.name }}"
-                             class="w-full h-64 object-cover object-center group-hover:scale-105 transition duration-300">
+                    <div class="aspect-[3/4] relative overflow-hidden bg-white">
+                        {% if product.main_image %}
+                        <img src="{{ product.main_image.url }}" alt="{{ product.name }}"
+                            class="w-full h-full object-contain"
+                            onerror="this.src='https://placehold.co/300x400?text=No+Image'">
+                        {% else %}
+                        <img src="https://placehold.co/300x400?text={{ product.name|urlencode }}"
+                            class="w-full h-full object-contain">
+                        {% endif %}
                         
                         <!-- Badge giam gia -->
                         {% if product.discount_percent > 0 %}
-                        <span class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-lg text-sm font-bold">
-                            -{{ product.discount_percent }}%
-                        </span>
+                        <div class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+                            GIẢM {{ product.discount_percent|floatformat:0 }}%
+                        </div>
                         {% endif %}
                     </div>
                     
                     <!-- Thong tin san pham -->
-                    <div class="p-4">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-2 group-hover:text-primary transition">
+                    <div class="p-3 bg-white">
+                        <h3 class="text-sm font-medium text-gray-800 mb-2 group-hover:text-primary transition-colors line-clamp-2">
                             {{ product.name }}
                         </h3>
-                        
-                        <div class="flex items-center gap-2 mb-3">
+                        <div>
+                            <!-- Gia khuyen mai -->
+                            <div class="text-red-600 font-bold text-sm">
+                                <span class="price-format">{{ product.sale_price|format_vnd }}</span>₫
+                            </div>
                             <!-- Gia goc (gach ngang) -->
                             {% if product.discount_percent > 0 %}
-                            <span class="text-gray-400 line-through text-sm">
-                                {{ product.original_price|format_vnd }}
-                            </span>
+                            <div class="text-gray-400 line-through text-xs">
+                                <span class="price-format">{{ product.original_price|format_vnd }}</span>₫
+                            </div>
                             {% endif %}
-                            
-                            <!-- Gia khuyen mai -->
-                            <span class="text-red-600 font-bold text-xl">
-                                {{ product.sale_price|format_vnd }}
-                            </span>
                         </div>
                     </div>
                 </div>
@@ -329,27 +332,47 @@
 </section>
 
 <!-- Tai sao chon chung toi -->
-<section class="bg-gray-100 py-12">
-    <div class="container mx-auto px-4">
-        <h2 class="text-3xl font-bold text-center mb-8">Tai sao chon PhoneShop?</h2>
+<section class="bg-gray-50 py-12">
+    <div class="max-w-7xl mx-auto px-4">
+        <!-- Tieu de -->
+        <div class="flex items-center justify-center gap-4 mb-10">
+            <div class="flex-1 h-px bg-gradient-to-l from-primary to-transparent max-w-[80px]"></div>
+            <h2 class="text-xl font-bold text-dark whitespace-nowrap">TAI SAO CHON PHONESHOP?</h2>
+            <div class="flex-1 h-px bg-gradient-to-r from-primary to-transparent max-w-[80px]"></div>
+        </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="text-center">
-                <div class="text-4xl mb-4">OK</div>
-                <h3 class="text-xl font-semibold mb-2">Hang chinh hang</h3>
-                <p class="text-gray-600">Cam ket 100% san pham chinh hang, day du bill.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Hàng chính hãng -->
+            <div class="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Hàng Chính Hãng</h3>
+                <p class="text-gray-600 text-sm">Cam kết 100% sản phẩm chính hãng, đầy đủ bill.</p>
             </div>
             
-            <div class="text-center">
-                <div class="text-4xl mb-4">Giao hang</div>
-                <h3 class="text-xl font-semibold mb-2">Giao hang nhanh</h3>
-                <p class="text-gray-600">Giao hang tan noi trong 1-2 ngay lam viec.</p>
+            <!-- Giao hàng nhanh -->
+            <div class="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Giao Hàng Nhanh</h3>
+                <p class="text-gray-600 text-sm">Giao hàng tận nơi trong 1-2 ngày làm việc.</p>
             </div>
             
-            <div class="text-center">
-                <div class="text-4xl mb-4">Bao hanh</div>
-                <h3 class="text-xl font-semibold mb-2">Bao hanh uy tin</h3>
-                <p class="text-gray-600">Bao hanh chinh hang tu 12-24 thang.</p>
+            <!-- Bảo hành uy tín -->
+            <div class="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Bảo Hành Uy Tín</h3>
+                <p class="text-gray-600 text-sm">Bảo hành chính hãng từ 12-24 tháng.</p>
             </div>
         </div>
     </div>

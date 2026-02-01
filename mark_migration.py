@@ -10,3 +10,4 @@ conn.commit()
 print('Migration marked as applied!')
 conn.close()
 
+

@@ -27,7 +27,7 @@ urlpatterns = [
 
     # Tìm kiếm sản phẩm
     path('products/search/', views.product_search, name='product_search'),
-
+    
     # Trang chi tiết sản phẩm
     path('product/<int:product_id>/', views.product_detail, name='product_detail'),
     
