@@ -1026,10 +1026,19 @@ def cart_detail(request):
     """
     cart = get_or_create_cart(request)
     
+    # Lấy danh sách sản phẩm được chọn từ session
+    selected_items = request.session.get('selected_cart_items', [])
+    
+    # Nếu có voucher trong session nhưng KHÔNG có sản phẩm được chọn -> XÓA voucher
+    coupon_code = request.session.get('applied_coupon')
+    if coupon_code and not selected_items:
+        del request.session['applied_coupon']
+        coupon_code = None
+    
     # Lấy coupon từ session (nếu có)
     applied_coupon = None
     coupon_discount_amount = 0
-    coupon_code = request.session.get('applied_coupon')
+    
     if coupon_code:
         from django.utils import timezone
         from django.db.models import Q
@@ -1042,23 +1051,18 @@ def cart_detail(request):
         ).first()
         
         if applied_coupon:
-            # Lấy số sản phẩm được chọn từ session hoặc tất cả
-            selected_items = request.session.get('selected_cart_items', list(cart.items.values_list('id', flat=True)))
             cart_items = cart.items.filter(id__in=selected_items)
+            product_count = cart_items.count()
             subtotal = sum(item.subtotal for item in cart_items)
-            coupon_discount_amount = applied_coupon.calculate_discount(subtotal)
-        
-        # Kiểm tra giới hạn sản phẩm
-        if applied_coupon and applied_coupon.max_product_limit > 0:
-            product_count = cart.items.filter(id__in=request.session.get('selected_cart_items', list(cart.items.values_list('id', flat=True)))).count()
             
-            # Nếu vượt quá giới hạn, xóa coupon khỏi session
-            if product_count > applied_coupon.max_product_limit:
+            # Kiểm tra giới hạn sản phẩm
+            if applied_coupon.max_product_limit > 0 and product_count > applied_coupon.max_product_limit:
                 max_limit = applied_coupon.max_product_limit
                 del request.session['applied_coupon']
                 applied_coupon = None
-                coupon_discount_amount = 0
                 messages.warning(request, f'Voucher chỉ áp dụng cho tối đa {max_limit} sản phẩm. Voucher đã bị hủy.')
+            else:
+                coupon_discount_amount = applied_coupon.calculate_discount(subtotal)
     
     context = {
         'cart': cart,
@@ -1451,13 +1455,21 @@ def apply_coupon(request):
             del request.session['applied_coupon']
         return JsonResponse({'success': False, 'message': 'Mã giảm giá không hợp lệ hoặc đã hết hạn.'})
     
-    # Lấy số sản phẩm được chọn từ session hoặc tất cả sản phẩm trong giỏ
+    # Lấy số sản phẩm được chọn từ session
     cart = get_or_create_cart(request)
-    selected_items = request.session.get('selected_cart_items', list(cart.items.values_list('id', flat=True)))
+    selected_items = request.session.get('selected_cart_items', [])
+    
+    # KIỂM TRA: Nếu chưa chọn sản phẩm nào, báo lỗi
+    if not selected_items:
+        return JsonResponse({
+            'success': False, 
+            'message': 'Vui lòng chọn sản phẩm trước khi áp dụng mã giảm giá.'
+        })
+    
     cart_items = cart.items.filter(id__in=selected_items)
     product_count = cart_items.count()
     
-    # KIỂM TRA GIỚI HẠN SẢN PHẨM TRƯỚC
+    # KIỂM TRA GIỚI HẠN SẢN PHẨM
     if coupon.max_product_limit > 0 and product_count > coupon.max_product_limit:
         return JsonResponse({
             'success': False, 
@@ -1476,6 +1488,8 @@ def apply_coupon(request):
         'success': True,
         'message': f'Áp dụng mã {code} thành công!',
         'coupon_code': code,
+        'discount_value': coupon.discount_value,
+        'discount_type': coupon.discount_type,
         'discount_amount': int(discount),
         'total': int(total),
     })
@@ -1538,45 +1552,34 @@ def buy_now(request, product_id):
     return redirect('cart_detail')
 
 
+@require_POST
 def select_cart_items(request):
     """
-    Lưu danh sách sản phẩm được chọn vào session và chuyển đến checkout.
+    Lưu danh sách sản phẩm được chọn vào session.
     """
-    if request.method == 'POST':
-        import json
-        
-        # Lấy dữ liệu từ form
-        raw_data = request.POST.get('selected_items', '[]')
-        
-        try:
-            # Thử parse JSON
-            if raw_data.startswith('['):
-                selected_ids = json.loads(raw_data)
-            else:
-                # Nếu không phải JSON, thử getlist
-                selected_ids = request.POST.getlist('selected_items')
-        except (json.JSONDecodeError, TypeError, ValueError):
-            selected_ids = request.POST.getlist('selected_items')
-        
-        # Nếu vẫn là list chứa JSON string, xử lý
-        if selected_ids and isinstance(selected_ids, list):
-            first_item = selected_ids[0]
-            if isinstance(first_item, str) and first_item.startswith('['):
-                try:
-                    selected_ids = json.loads(first_item)
-                except (json.JSONDecodeError, TypeError, ValueError):
-                    selected_ids = []
-        
-        if not selected_ids:
-            messages.warning(request, 'Vui lòng chọn sản phẩm để thanh toán.')
-            return redirect('cart_detail')
-        
-        # Lưu vào session
-        request.session['selected_cart_items'] = [int(id) for id in selected_ids]
-        
-        return redirect('checkout')
+    import json
     
-    return redirect('cart_detail')
+    # Lấy dữ liệu từ AJAX request
+    raw_data = request.POST.get('selected_items', '[]')
+    
+    try:
+        selected_ids = json.loads(raw_data)
+    except (json.JSONDecodeError, TypeError, ValueError):
+        selected_ids = []
+    
+    # Lưu vào session
+    request.session['selected_cart_items'] = [int(id) for id in selected_ids] if selected_ids else []
+    
+    # Nếu là AJAX request, trả về JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+    
+    # Nếu là form submission thông thường
+    if not selected_ids:
+        messages.warning(request, 'Vui lòng chọn sản phẩm để thanh toán.')
+        return redirect('cart_detail')
+    
+    return redirect('checkout')
 
 
 @login_required

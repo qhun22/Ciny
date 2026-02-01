@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 {% load custom_filters %}
+{% load humanize %}
+{% load humanize %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
@@ -32,7 +34,8 @@
                                 <tr>
                                     <th class="px-4 py-3 text-center w-12">
                                         <input type="checkbox" id="selectAll" 
-                                               class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary">
+                                               class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                               {% if cart.items.count > 0 and request.session.selected_cart_items|length == cart.items.count %}checked{% endif %}>
                                     </th>
                                     <th class="px-4 py-3 text-left">Sản phẩm</th>
                                     <th class="px-4 py-3 text-center">Đơn giá</th>
@@ -47,7 +50,7 @@
                                     <td class="px-4 py-4 text-center">
                                         <input type="checkbox" name="selected_items" value="{{ item.id }}" 
                                                class="item-checkbox w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
-                                               {% if applied_coupon or request.session.selected_cart_items|length == 0 %}checked{% endif %}>
+                                               {% if item.id|stringformat:"s" in request.session.selected_cart_items|default:"" %}checked{% endif %}>
                                     </td>
                                     <td class="px-4 py-4">
                                         <div class="flex items-center gap-4">
@@ -173,13 +176,14 @@
                     <div class="flex gap-2">
                         <input type="text" name="code" id="couponCode"
                                placeholder="Nhập mã voucher"
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition">
+                               class="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
+                               oninput="hideCouponError()">
                         <button type="submit" 
                                 class="px-5 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-blue-600 hover:shadow-lg transition whitespace-nowrap">
                             Áp dụng
                         </button>
                     </div>
-                    <p class="text-sm text-gray-500 mt-2">Nhập mã voucher để giảm giá đơn hàng</p>
+                    <p class="text-sm text-gray-500 mt-2">Vui lòng chọn sản phẩm trước khi áp dụng mã giảm giá</p>
                 </form>
                 
                 <!-- Thông báo lỗi voucher -->
@@ -295,6 +299,24 @@ const appliedCoupon = {% if applied_coupon %}{
     discount_value: {{ applied_coupon.discount_value }}
 }{% else %}null{% endif %};
 
+// Lưu danh sách sản phẩm được chọn vào session
+function saveSelectedItemsToSession() {
+    const selectedIds = [];
+    document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
+        selectedIds.push(cb.value);
+    });
+    
+    fetch('/cart/select-items/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: 'selected_items=' + JSON.stringify(selectedIds)
+    });
+}
+
 // Chọn/bỏ chọn tất cả
 document.getElementById('selectAll')?.addEventListener('change', function() {
     const checkboxes = document.querySelectorAll('.item-checkbox');
@@ -309,7 +331,19 @@ document.getElementById('selectAll')?.addEventListener('change', function() {
     });
     toggleDeleteButton();
     calculateTotal();
+    saveSelectedItemsToSession();
 });
+
+// Cập nhật "Select All" checkbox khi chọn/bỏ chọn từng sản phẩm
+function updateSelectAllCheckbox() {
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+        const checkboxes = document.querySelectorAll('.item-checkbox');
+        const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+        selectAll.checked = checkboxes.length === checkedBoxes.length;
+        selectAll.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < checkboxes.length;
+    }
+}
 
 // Toggle nút xóa và tính tổng khi chọn sản phẩm
 document.querySelectorAll('.item-checkbox').forEach(cb => {
@@ -320,8 +354,10 @@ document.querySelectorAll('.item-checkbox').forEach(cb => {
         } else {
             row.classList.remove('bg-blue-50');
         }
+        updateSelectAllCheckbox();
         toggleDeleteButton();
         calculateTotal();
+        saveSelectedItemsToSession();
     });
 });
 
@@ -375,6 +411,14 @@ function calculateTotal() {
     return selectedIds;
 }
 
+// Ẩn thông báo lỗi voucher khi người dùng nhập lại
+function hideCouponError() {
+    const errorDiv = document.getElementById('couponError');
+    if (errorDiv) {
+        errorDiv.classList.add('hidden');
+    }
+}
+
 // Xử lý form coupon bằng AJAX
 document.getElementById('couponForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
@@ -394,7 +438,30 @@ document.getElementById('couponForm')?.addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload();
+            // KHÔNG reload trang - cập nhật UI động
+            const errorDiv = document.getElementById('couponError');
+            if (errorDiv) errorDiv.classList.add('hidden');
+            
+            // Cập nhật biến appliedCoupon để calculateTotal() sử dụng
+            appliedCoupon = {
+                code: data.coupon_code,
+                discount_value: data.discount_value,
+                discount_type: data.discount_type
+            };
+            
+            // Tính lại tổng tiền với voucher
+            calculateTotal();
+            
+            // Hiển thị thông báo thành công
+            const couponForm = document.getElementById('couponForm');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'mt-3 p-3 bg-green-100 text-green-700 rounded-lg text-sm';
+            successDiv.textContent = data.message;
+            successDiv.id = 'couponSuccess';
+            couponForm.parentNode.insertBefore(successDiv, couponForm.nextSibling);
+            
+            // Ẩn form sau khi áp dụng thành công
+            couponForm.style.display = 'none';
         } else {
             const errorDiv = document.getElementById('couponError');
             errorDiv.textContent = data.message;
@@ -426,6 +493,7 @@ function updateQuantity(itemId, change) {
             
             calculateTotal();
             saveQuantity(itemId, newQty);
+            saveSelectedItemsToSession();
         }
     });
 }
@@ -460,6 +528,7 @@ function onQuantityChange(input) {
     
     calculateTotal();
     saveQuantity(itemId, quantity);
+    saveSelectedItemsToSession();
 }
 
 function proceedToCheckout() {
@@ -527,6 +596,12 @@ document.addEventListener('DOMContentLoaded', function() {
             row.classList.add('bg-blue-50');
         }
     });
+    
+    // Cập nhật "Select All" checkbox trạng thái
+    updateSelectAllCheckbox();
+    
+    // Lưu danh sách sản phẩm được chọn vào session khi trang load
+    saveSelectedItemsToSession();
     
     // Tính tổng tiền
     calculateTotal();
