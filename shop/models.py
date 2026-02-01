@@ -362,13 +362,9 @@ class Coupon(models.Model):
         else:
             return f"{self.code} - {self.discount_value:,}đ OFF"
     
-    def calculate_discount(self, total_amount, product_count=0):
+    def calculate_discount(self, total_amount):
         """Tính số tiền giảm giá."""
         if not self.is_active:
-            return 0
-        
-        # Kiểm tra số sản phẩm tối đa
-        if self.max_product_limit > 0 and product_count > self.max_product_limit:
             return 0
         
         # Kiểm tra đơn hàng tối thiểu

@@ -46,7 +46,8 @@
                                 <tr class="border-t item-row hover:bg-gray-50 transition" data-price="{{ item.price }}" id="item_{{ item.id }}">
                                     <td class="px-4 py-4 text-center">
                                         <input type="checkbox" name="selected_items" value="{{ item.id }}" 
-                                               class="item-checkbox w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary">
+                                               class="item-checkbox w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                               {% if applied_coupon or request.session.selected_cart_items|length == 0 %}checked{% endif %}>
                                     </td>
                                     <td class="px-4 py-4">
                                         <div class="flex items-center gap-4">
@@ -213,7 +214,7 @@
                     {% if applied_coupon %}
                     <div class="flex justify-between text-green-600" id="discountRow">
                         <span>Giảm giá ({{ applied_coupon.code }}):</span>
-                        <span class="font-bold" id="appliedDiscountAmount">-0đ</span>
+                        <span class="font-bold" id="appliedDiscountAmount">-{{ coupon_discount_amount|intcomma }}đ</span>
                     </div>
                     {% endif %}
                     <div class="border-t pt-3">
@@ -519,6 +520,15 @@ function getCookie(name) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Highlight các dòng đã được check mặc định
+    document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
+        const row = cb.closest('tr');
+        if (row) {
+            row.classList.add('bg-blue-50');
+        }
+    });
+    
+    // Tính tổng tiền
     calculateTotal();
 });
 </script>

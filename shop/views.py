@@ -1028,6 +1028,7 @@ def cart_detail(request):
     
     # Lấy coupon từ session (nếu có)
     applied_coupon = None
+    coupon_discount_amount = 0
     coupon_code = request.session.get('applied_coupon')
     if coupon_code:
         from django.utils import timezone
@@ -1039,10 +1040,30 @@ def cart_detail(request):
             Q(expires_at__isnull=True) | 
             Q(expires_at__gt=timezone.now())
         ).first()
+        
+        if applied_coupon:
+            # Lấy số sản phẩm được chọn từ session hoặc tất cả
+            selected_items = request.session.get('selected_cart_items', list(cart.items.values_list('id', flat=True)))
+            cart_items = cart.items.filter(id__in=selected_items)
+            subtotal = sum(item.subtotal for item in cart_items)
+            coupon_discount_amount = applied_coupon.calculate_discount(subtotal)
+        
+        # Kiểm tra giới hạn sản phẩm
+        if applied_coupon and applied_coupon.max_product_limit > 0:
+            product_count = cart.items.filter(id__in=request.session.get('selected_cart_items', list(cart.items.values_list('id', flat=True)))).count()
+            
+            # Nếu vượt quá giới hạn, xóa coupon khỏi session
+            if product_count > applied_coupon.max_product_limit:
+                max_limit = applied_coupon.max_product_limit
+                del request.session['applied_coupon']
+                applied_coupon = None
+                coupon_discount_amount = 0
+                messages.warning(request, f'Voucher chỉ áp dụng cho tối đa {max_limit} sản phẩm. Voucher đã bị hủy.')
     
     context = {
         'cart': cart,
         'applied_coupon': applied_coupon,
+        'coupon_discount_amount': coupon_discount_amount,
         'page_title': 'Giỏ hàng - PhoneShop',
     }
     
@@ -1230,6 +1251,14 @@ def checkout_view(request):
     if coupon_code:
         coupon = Coupon.objects.filter(code=coupon_code, is_active=True).first()
         if coupon:
+            product_count = cart_items.count()
+            # Kiểm tra giới hạn sản phẩm
+            if coupon.max_product_limit > 0 and product_count > coupon.max_product_limit:
+                # Xóa coupon khỏi session
+                del request.session['applied_coupon']
+                coupon = None
+                messages.warning(request, f'Voucher chỉ áp dụng cho tối đa {coupon.max_product_limit} sản phẩm. Vui lòng chọn lại sản phẩm.')
+                return redirect('cart_detail')
             discount_amount = coupon.calculate_discount(subtotal)
     
     total = subtotal - discount_amount
@@ -1293,6 +1322,13 @@ def checkout_place_order(request):
     if coupon_code:
         coupon = Coupon.objects.filter(code=coupon_code, is_active=True).first()
         if coupon:
+            product_count = cart_items.count()
+            # Kiểm tra giới hạn sản phẩm
+            if coupon.max_product_limit > 0 and product_count > coupon.max_product_limit:
+                # Xóa coupon khỏi session và chuyển về giỏ hàng
+                del request.session['applied_coupon']
+                messages.warning(request, f'Voucher chỉ áp dụng cho tối đa {coupon.max_product_limit} sản phẩm. Vui lòng chọn lại sản phẩm.')
+                return redirect('cart_detail')
             discount_amount = coupon.calculate_discount(subtotal)
     
     total = subtotal - discount_amount
@@ -1334,6 +1370,10 @@ def checkout_place_order(request):
         del request.session['applied_coupon']
     if 'selected_cart_items' in request.session:
         del request.session['selected_cart_items']
+    
+    # Xóa UserVoucher nếu có (sau khi đặt hàng thành công)
+    if coupon:
+        UserVoucher.objects.filter(user=request.user, coupon=coupon).delete()
     
     # Lưu order_id vào session để hiển thị trang thành công
     request.session['last_order_id'] = order.id
@@ -1411,29 +1451,25 @@ def apply_coupon(request):
             del request.session['applied_coupon']
         return JsonResponse({'success': False, 'message': 'Mã giảm giá không hợp lệ hoặc đã hết hạn.'})
     
-    # Lưu vào session
-    request.session['applied_coupon'] = code
-    
-    # Tính lại tổng tiền
+    # Lấy số sản phẩm được chọn từ session hoặc tất cả sản phẩm trong giỏ
     cart = get_or_create_cart(request)
     selected_items = request.session.get('selected_cart_items', list(cart.items.values_list('id', flat=True)))
     cart_items = cart.items.filter(id__in=selected_items)
-    subtotal = sum(item.subtotal for item in cart_items)
     product_count = cart_items.count()
     
-    # Tính giảm giá với kiểm tra số sản phẩm tối đa
-    discount = coupon.calculate_discount(subtotal, product_count)
-    
-    # Nếu discount = 0 do vượt quá số sản phẩm tối đa
-    if discount == 0 and coupon.max_product_limit > 0 and product_count > coupon.max_product_limit:
-        # Xóa coupon khỏi session
-        if 'applied_coupon' in request.session:
-            del request.session['applied_coupon']
+    # KIỂM TRA GIỚI HẠN SẢN PHẨM TRƯỚC
+    if coupon.max_product_limit > 0 and product_count > coupon.max_product_limit:
         return JsonResponse({
             'success': False, 
             'message': f'Voucher chỉ áp dụng cho tối đa {coupon.max_product_limit} sản phẩm. Bạn đang chọn {product_count} sản phẩm.'
         })
     
+    # Lưu vào session CHỈ KHI qua được kiểm tra
+    request.session['applied_coupon'] = code
+    
+    # Tính lại tổng tiền
+    subtotal = sum(item.subtotal for item in cart_items)
+    discount = coupon.calculate_discount(subtotal)
     total = subtotal - discount
     
     return JsonResponse({

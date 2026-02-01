@@ -293,9 +293,10 @@
                                            onchange="toggleAllVouchers(this)">
                                 </div>
                                 <div class="col-span-2">Mã</div>
-                                <div class="col-span-3">Mô tả</div>
-                                <div class="col-span-2">Giảm giá</div>
+                                <div class="col-span-2">Mô tả</div>
+                                <div class="col-span-1 text-center">Giảm giá</div>
                                 <div class="col-span-2">Đơn tối thiểu</div>
+                                <div class="col-span-2">Sản phẩm tối đa</div>
                                 <div class="col-span-2">Giới hạn</div>
                             </div>
                             
@@ -310,14 +311,14 @@
                                     <div class="col-span-2">
                                         <span class="font-bold text-blue-600 text-lg">{{ user_voucher.coupon.code }}</span>
                                     </div>
-                                    <div class="col-span-3 text-gray-600 text-sm">
+                                    <div class="col-span-2 text-gray-600 text-sm">
                                         {% if user_voucher.coupon.description %}
-                                        {{ user_voucher.coupon.description|truncatechars:50 }}
+                                        {{ user_voucher.coupon.description|truncatechars:40 }}
                                         {% else %}
-                                        <span class="text-gray-400 italic">Không có mô tả</span>
+                                        <span class="text-gray-400 italic">-</span>
                                         {% endif %}
                                     </div>
-                                    <div class="col-span-2">
+                                    <div class="col-span-1 text-center">
                                         {% if user_voucher.coupon.discount_type == 'percent' %}
                                         <span class="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded text-sm font-medium">
                                             -{{ user_voucher.coupon.discount_value }}%
@@ -330,6 +331,13 @@
                                     </div>
                                     <div class="col-span-2 text-gray-600 text-sm">
                                         {{ user_voucher.coupon.min_order|floatformat:"0"|intcomma }}đ
+                                    </div>
+                                    <div class="col-span-2 text-gray-600 text-sm">
+                                        {% if user_voucher.coupon.max_product_limit > 0 %}
+                                        <span class="font-medium">{{ user_voucher.coupon.max_product_limit }} sản phẩm</span>
+                                        {% else %}
+                                        <span class="text-gray-400">Không giới hạn</span>
+                                        {% endif %}
                                     </div>
                                     <div class="col-span-2">
                                         {% if user_voucher.coupon.max_usage_per_user > 0 %}
