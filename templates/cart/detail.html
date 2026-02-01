@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% load custom_filters %}
 {% load humanize %}
-{% load humanize %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
@@ -299,12 +298,17 @@ const appliedCoupon = {% if applied_coupon %}{
     discount_value: {{ applied_coupon.discount_value }}
 }{% else %}null{% endif %};
 
-// Lưu danh sách sản phẩm được chọn vào session
+// Lưu danh sách sản phẩm được chọn vào session (chỉ khi có sản phẩm được chọn)
 function saveSelectedItemsToSession() {
     const selectedIds = [];
     document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
         selectedIds.push(cb.value);
     });
+    
+    // Chỉ lưu vào session nếu có sản phẩm được chọn
+    if (selectedIds.length === 0) {
+        return; // KHÔNG lưu danh sách rỗng
+    }
     
     fetch('/cart/select-items/', {
         method: 'POST',
@@ -387,9 +391,9 @@ function calculateTotal() {
     document.getElementById('totalItems').textContent = totalItems;
     document.getElementById('subtotalPrice').textContent = totalPrice.toLocaleString('vi-VN') + 'đ';
     
-    // Tính tiền giảm nếu có coupon
+    // Tính tiền giảm nếu CÓ coupon VÀ CÓ sản phẩm được chọn
     let discount = 0;
-    if (appliedCoupon) {
+    if (appliedCoupon && selectedIds.length > 0) {
         if (appliedCoupon.discount_type === 'percent') {
             discount = totalPrice * appliedCoupon.discount_value / 100;
         } else {
@@ -398,10 +402,14 @@ function calculateTotal() {
         if (discount > totalPrice) discount = totalPrice;
     }
     
-    // Hiển thị tiền giảm
+    // Hiển thị tiền giảm (chỉ khi có discount > 0)
     const discountElement = document.getElementById('discountAmount') || document.getElementById('appliedDiscountAmount');
     if (discountElement) {
-        discountElement.textContent = '-' + Math.round(discount).toLocaleString('vi-VN') + 'đ';
+        if (discount > 0) {
+            discountElement.textContent = '-' + Math.round(discount).toLocaleString('vi-VN') + 'đ';
+        } else {
+            discountElement.textContent = '0đ';
+        }
     }
     
     // Tính tổng cuối
@@ -419,21 +427,44 @@ function hideCouponError() {
     }
 }
 
-// Xử lý form coupon bằng AJAX
+// Xử lý form coupon bằng AJAX - Lưu selected items trước khi áp dụng
 document.getElementById('couponForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
     
-    const formData = new URLSearchParams();
-    formData.append('code', document.getElementById('couponCode').value);
+    // TRƯỚC TIÊN: Lưu selected items vào session
+    const selectedIds = [];
+    document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
+        selectedIds.push(cb.value);
+    });
     
-    fetch(this.action, {
+    const saveFormData = new URLSearchParams();
+    saveFormData.append('selected_items', JSON.stringify(selectedIds));
+    
+    // Gọi API lưu selected items trước
+    fetch('/cart/select-items/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-CSRFToken': getCookie('csrftoken'),
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: formData.toString()
+        body: saveFormData.toString()
+    })
+    .then(response => response.json())
+    .then(saveData => {
+        // SAU KHI lưu selected items thành công, mới áp dụng coupon
+        const couponFormData = new URLSearchParams();
+        couponFormData.append('code', document.getElementById('couponCode').value);
+        
+        return fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: couponFormData.toString()
+        });
     })
     .then(response => response.json())
     .then(data => {
@@ -471,8 +502,10 @@ document.getElementById('couponForm')?.addEventListener('submit', function(e) {
     .catch(error => {
         console.error('Error:', error);
         const errorDiv = document.getElementById('couponError');
-        errorDiv.textContent = 'Có lỗi xảy ra. Vui lòng thử lại.';
-        errorDiv.classList.remove('hidden');
+        if (errorDiv) {
+            errorDiv.textContent = 'Có lỗi xảy ra. Vui lòng thử lại.';
+            errorDiv.classList.remove('hidden');
+        }
     });
 });
 
@@ -589,8 +622,12 @@ function getCookie(name) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Kiểm tra xem có sản phẩm được chọn không
+    const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+    const hasChecked = checkedBoxes.length > 0;
+    
     // Highlight các dòng đã được check mặc định
-    document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
+    checkedBoxes.forEach(cb => {
         const row = cb.closest('tr');
         if (row) {
             row.classList.add('bg-blue-50');
@@ -600,8 +637,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Cập nhật "Select All" checkbox trạng thái
     updateSelectAllCheckbox();
     
-    // Lưu danh sách sản phẩm được chọn vào session khi trang load
-    saveSelectedItemsToSession();
+    // Nếu KHÔNG có sản phẩm được chọn -> XÓA coupon để tránh tính sai tiền
+    if (!hasChecked && appliedCoupon) {
+        // Reset appliedCoupon về null để không tính discount
+        window.appliedCoupon = null;
+        
+        // Cập nhật UI hiển thị 0đ discount
+        const discountElement = document.getElementById('discountAmount') || document.getElementById('appliedDiscountAmount');
+        if (discountElement) {
+            discountElement.textContent = '0đ';
+        }
+    } else if (hasChecked) {
+        // Chỉ lưu selected items nếu đã có từ trước
+        saveSelectedItemsToSession();
+    }
     
     // Tính tổng tiền
     calculateTotal();

@@ -1029,16 +1029,26 @@ def cart_detail(request):
     # Lấy danh sách sản phẩm được chọn từ session
     selected_items = request.session.get('selected_cart_items', [])
     
-    # Nếu có voucher trong session nhưng KHÔNG có sản phẩm được chọn -> XÓA voucher
-    coupon_code = request.session.get('applied_coupon')
-    if coupon_code and not selected_items:
-        del request.session['applied_coupon']
-        coupon_code = None
+    # Lọc chỉ lấy những selected_items còn tồn tại trong cart
+    valid_selected_items = []
+    if selected_items:
+        valid_selected_items = [str(id) for id in selected_items if cart.items.filter(id=id).exists()]
+    
+    # CẬP NHẬT session nếu có items không còn tồn tại
+    if len(valid_selected_items) != len(selected_items):
+        request.session['selected_cart_items'] = [int(id) for id in valid_selected_items]
+        selected_items = valid_selected_items
+    
+    # KIỂM TRA: Nếu selected_items TRỐNG sau khi lọc -> XÓA voucher
+    if not selected_items:
+        if 'applied_coupon' in request.session:
+            del request.session['applied_coupon']
     
     # Lấy coupon từ session (nếu có)
     applied_coupon = None
     coupon_discount_amount = 0
     
+    coupon_code = request.session.get('applied_coupon')
     if coupon_code:
         from django.utils import timezone
         from django.db.models import Q
@@ -1051,18 +1061,24 @@ def cart_detail(request):
         ).first()
         
         if applied_coupon:
-            cart_items = cart.items.filter(id__in=selected_items)
-            product_count = cart_items.count()
-            subtotal = sum(item.subtotal for item in cart_items)
-            
-            # Kiểm tra giới hạn sản phẩm
-            if applied_coupon.max_product_limit > 0 and product_count > applied_coupon.max_product_limit:
-                max_limit = applied_coupon.max_product_limit
+            # Chỉ tính discount KHI CÓ sản phẩm được chọn
+            if selected_items:
+                cart_items = cart.items.filter(id__in=selected_items)
+                product_count = cart_items.count()
+                subtotal = sum(item.subtotal for item in cart_items)
+                
+                # Kiểm tra giới hạn sản phẩm
+                if applied_coupon.max_product_limit > 0 and product_count > applied_coupon.max_product_limit:
+                    max_limit = applied_coupon.max_product_limit
+                    del request.session['applied_coupon']
+                    applied_coupon = None
+                    messages.warning(request, f'Voucher chỉ áp dụng cho tối đa {max_limit} sản phẩm. Voucher đã bị hủy.')
+                else:
+                    coupon_discount_amount = applied_coupon.calculate_discount(subtotal)
+            else:
+                # Không có sản phẩm được chọn -> XÓA voucher
                 del request.session['applied_coupon']
                 applied_coupon = None
-                messages.warning(request, f'Voucher chỉ áp dụng cho tối đa {max_limit} sản phẩm. Voucher đã bị hủy.')
-            else:
-                coupon_discount_amount = applied_coupon.calculate_discount(subtotal)
     
     context = {
         'cart': cart,
