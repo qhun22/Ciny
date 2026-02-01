@@ -244,19 +244,11 @@ def register_view(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
         if form.is_valid():
-            # Lấy phone_number từ cleaned_data
-            phone_number = form.cleaned_data.get('phone_number')
-
             # Tạo user mới (form.save với commit=False để kiểm soát việc save)
             user = form.save(commit=False)
             
             # Lưu user vào database (signal sẽ tạo UserProfile)
             user.save()
-
-            # Lưu phone_number vào UserProfile
-            profile, created = UserProfile.objects.get_or_create(user=user)
-            profile.phone_number = phone_number
-            profile.save()
 
             # Đăng nhập user ngay sau khi đăng ký
             from django.contrib.auth import login
@@ -450,33 +442,42 @@ def profile_view(request):
         is_phone_verified = getattr(user.profile, 'is_phone_verified', False)
         
         if phone_number and not is_phone_verified:
-            try:
-                user.profile.phone_number = phone_number
-                user.profile.is_phone_verified = True  # Khóa số điện thoại sau khi cập nhật
-                user.profile.save()
-                messages.success(request, 'Cập nhật số điện thoại thành công! Số điện thoại đã được khóa.')
-                
-                # Tặng voucher QHUN22 cho user khi xác thực số điện thoại
+            # KIỂM TRA: Số điện thoại đã được sử dụng chưa?
+            phone_exists = UserProfile.objects.filter(
+                phone_number=phone_number,
+                is_phone_verified=True
+            ).exclude(user=user).exists()
+            
+            if phone_exists:
+                messages.error(request, 'Số điện thoại này đã được sử dụng bởi tài khoản khác!')
+            else:
                 try:
-                    qhun22_coupon = Coupon.objects.get(code='QHUN22', is_active=True)
+                    user.profile.phone_number = phone_number
+                    user.profile.is_phone_verified = True  # Khóa số điện thoại sau khi cập nhật
+                    user.profile.save()
+                    messages.success(request, 'Cập nhật số điện thoại thành công! Số điện thoại đã được khóa.')
                     
-                    # Kiểm tra xem user đã có voucher này chưa
-                    existing_user_voucher = UserVoucher.objects.filter(
-                        user=user,
-                        coupon=qhun22_coupon
-                    ).exists()
-                    
-                    if not existing_user_voucher:
-                        UserVoucher.objects.create(
+                    # Tặng voucher QHUN22 cho user khi xác thực số điện thoại
+                    try:
+                        qhun22_coupon = Coupon.objects.get(code='QHUN22', is_active=True)
+                        
+                        # Kiểm tra xem user đã có voucher này chưa
+                        existing_user_voucher = UserVoucher.objects.filter(
                             user=user,
                             coupon=qhun22_coupon
-                        )
-                        messages.success(request, 'Chúc mừng! Bạn đã nhận được voucher QHUN22!')
-                except Coupon.DoesNotExist:
-                    pass  # Voucher QHUN22 không tồn tại, bỏ qua
-                    
-            except Exception as e:
-                messages.error(request, 'Có lỗi xảy ra. Vui lòng thử lại.')
+                        ).exists()
+                        
+                        if not existing_user_voucher:
+                            UserVoucher.objects.create(
+                                user=user,
+                                coupon=qhun22_coupon
+                            )
+                            messages.success(request, 'Chúc mừng! Bạn đã nhận được voucher QHUN22!')
+                    except Coupon.DoesNotExist:
+                        pass  # Voucher QHUN22 không tồn tại, bỏ qua
+                        
+                except Exception as e:
+                    messages.error(request, 'Có lỗi xảy ra. Vui lòng thử lại.')
         
         # Đổi mật khẩu
         old_password = request.POST.get('old_password', '').strip()
@@ -528,11 +529,12 @@ def profile_view(request):
     # Xác định tab active
     active_tab = request.GET.get('tab', '')
     
-    # Lấy danh sách voucher của user (chỉ lấy voucher còn hạn và active)
+    # Lấy danh sách voucher của user (chỉ lấy voucher còn hạn, active và CHƯA sử dụng)
     from django.utils import timezone
     vouchers = UserVoucher.objects.filter(
         user=request.user,
-        coupon__is_active=True
+        coupon__is_active=True,
+        is_used=False  # Chỉ lấy voucher chưa sử dụng
     ).filter(
         models.Q(coupon__expires_at__isnull=True) | 
         models.Q(coupon__expires_at__gt=timezone.now())
@@ -1023,62 +1025,21 @@ def get_or_create_cart(request):
 def cart_detail(request):
     """
     Trang xem giỏ hàng.
+    Mỗi lần vào trang giỏ hàng, luôn bắt đầu với trạng thái TRỐNG (không coupon).
     """
     cart = get_or_create_cart(request)
     
-    # Lấy danh sách sản phẩm được chọn từ session
-    selected_items = request.session.get('selected_cart_items', [])
+    # KHÔNG BAO GIỜ giữ coupon khi vào lại trang - LUÔN reset
+    # Xóa coupon và selected_items khỏi session mỗi khi vào trang giỏ hàng
+    if 'applied_coupon' in request.session:
+        del request.session['applied_coupon']
+    if 'selected_cart_items' in request.session:
+        del request.session['selected_cart_items']
     
-    # Lọc chỉ lấy những selected_items còn tồn tại trong cart
-    valid_selected_items = []
-    if selected_items:
-        valid_selected_items = [str(id) for id in selected_items if cart.items.filter(id=id).exists()]
-    
-    # CẬP NHẬT session nếu có items không còn tồn tại
-    if len(valid_selected_items) != len(selected_items):
-        request.session['selected_cart_items'] = [int(id) for id in valid_selected_items]
-        selected_items = valid_selected_items
-    
-    # KIỂM TRA: Nếu selected_items TRỐNG sau khi lọc -> XÓA voucher
-    if not selected_items:
-        if 'applied_coupon' in request.session:
-            del request.session['applied_coupon']
-    
-    # Lấy coupon từ session (nếu có)
+    # Khởi tạo mặc định
     applied_coupon = None
     coupon_discount_amount = 0
-    
-    coupon_code = request.session.get('applied_coupon')
-    if coupon_code:
-        from django.utils import timezone
-        from django.db.models import Q
-        applied_coupon = Coupon.objects.filter(
-            code=coupon_code,
-            is_active=True
-        ).filter(
-            Q(expires_at__isnull=True) | 
-            Q(expires_at__gt=timezone.now())
-        ).first()
-        
-        if applied_coupon:
-            # Chỉ tính discount KHI CÓ sản phẩm được chọn
-            if selected_items:
-                cart_items = cart.items.filter(id__in=selected_items)
-                product_count = cart_items.count()
-                subtotal = sum(item.subtotal for item in cart_items)
-                
-                # Kiểm tra giới hạn sản phẩm
-                if applied_coupon.max_product_limit > 0 and product_count > applied_coupon.max_product_limit:
-                    max_limit = applied_coupon.max_product_limit
-                    del request.session['applied_coupon']
-                    applied_coupon = None
-                    messages.warning(request, f'Voucher chỉ áp dụng cho tối đa {max_limit} sản phẩm. Voucher đã bị hủy.')
-                else:
-                    coupon_discount_amount = applied_coupon.calculate_discount(subtotal)
-            else:
-                # Không có sản phẩm được chọn -> XÓA voucher
-                del request.session['applied_coupon']
-                applied_coupon = None
+    selected_items = []
     
     context = {
         'cart': cart,
@@ -1086,6 +1047,8 @@ def cart_detail(request):
         'coupon_discount_amount': coupon_discount_amount,
         'page_title': 'Giỏ hàng - PhoneShop',
     }
+    
+    return render(request, 'cart/detail.html', context)
     
     return render(request, 'cart/detail.html', context)
 
@@ -1164,7 +1127,7 @@ def cart_update(request, item_id):
 @require_POST
 def cart_remove(request, item_id):
     """
-    Xóa sản phẩm khỏi giỏ hàng.
+    Xóa sản phẩm khỏi giỏ hàng (AJAX).
     """
     cart = get_or_create_cart(request)
     item = get_object_or_404(CartItem, id=item_id, cart=cart)
@@ -1172,19 +1135,32 @@ def cart_remove(request, item_id):
     product_name = item.product.name
     item.delete()
     
-    messages.success(request, f'Đã xóa {product_name} khỏi giỏ hàng')
-    return redirect('cart_detail')
+    # Tính lại tổng
+    remaining_items = cart.items.all()
+    new_subtotal = sum(i.subtotal for i in remaining_items)
+    new_count = remaining_items.count()
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'Đã xóa {product_name} khỏi giỏ hàng',
+        'remaining_count': new_count,
+        'subtotal': new_subtotal
+    })
 
 
 def cart_clear(request):
     """
-    Xóa tất cả sản phẩm trong giỏ hàng.
+    Xóa tất cả sản phẩm trong giỏ hàng (AJAX).
     """
     cart = get_or_create_cart(request)
     cart.items.all().delete()
     
-    messages.success(request, 'Đã xóa toàn bộ giỏ hàng')
-    return redirect('cart_detail')
+    return JsonResponse({
+        'success': True,
+        'message': 'Đã xóa toàn bộ giỏ hàng',
+        'remaining_count': 0,
+        'subtotal': 0
+    })
 
 
 @require_POST
@@ -1342,6 +1318,32 @@ def checkout_place_order(request):
     if coupon_code:
         coupon = Coupon.objects.filter(code=coupon_code, is_active=True).first()
         if coupon:
+            # KIỂM TRA: Voucher có giới hạn email không?
+            if coupon.usage_type == 'specific':
+                user_email = request.user.email.lower()
+                target_email = coupon.specific_email.lower() if coupon.specific_email else ''
+                
+                if user_email != target_email:
+                    del request.session['applied_coupon']
+                    messages.error(request, f'Xin lỗi tài khoản của bạn không thể dùng được Voucher này.')
+                    return redirect('cart_detail')
+            
+            # KIỂM TRA: User đã dùng voucher này chưa?
+            used_user_voucher = UserVoucher.objects.filter(
+                user=request.user,
+                coupon=coupon,
+                is_used=True
+            ).exists()
+            used_in_order = Order.objects.filter(
+                user=request.user,
+                coupon_code=coupon.code
+            ).exists()
+            
+            if used_user_voucher or used_in_order:
+                del request.session['applied_coupon']
+                messages.error(request, 'Bạn đã sử dụng voucher này rồi!')
+                return redirect('cart_detail')
+            
             product_count = cart_items.count()
             # Kiểm tra giới hạn sản phẩm
             if coupon.max_product_limit > 0 and product_count > coupon.max_product_limit:
@@ -1391,9 +1393,15 @@ def checkout_place_order(request):
     if 'selected_cart_items' in request.session:
         del request.session['selected_cart_items']
     
-    # Xóa UserVoucher nếu có (sau khi đặt hàng thành công)
+    # Cập nhật UserVoucher: đánh dấu đã sử dụng thay vì xóa
     if coupon:
-        UserVoucher.objects.filter(user=request.user, coupon=coupon).delete()
+        user_voucher = UserVoucher.objects.filter(user=request.user, coupon=coupon, is_used=False).first()
+        if user_voucher:
+            from django.utils import timezone
+            user_voucher.is_used = True
+            user_voucher.used_at = timezone.now()
+            user_voucher.order = order
+            user_voucher.save()
     
     # Lưu order_id vào session để hiển thị trang thành công
     request.session['last_order_id'] = order.id
@@ -1457,6 +1465,8 @@ def order_detail(request, order_id):
 def apply_coupon(request):
     """
     Áp dụng mã giảm giá.
+    Kiểm tra user đã dùng voucher này chưa.
+    Kiểm tra voucher có giới hạn email không.
     """
     code = request.POST.get('code', '').strip().upper()
     
@@ -1466,14 +1476,63 @@ def apply_coupon(request):
     coupon = Coupon.objects.filter(code=code, is_active=True).first()
     
     if not coupon:
-        # Xóa coupon cũ nếu có
         if 'applied_coupon' in request.session:
             del request.session['applied_coupon']
         return JsonResponse({'success': False, 'message': 'Mã giảm giá không hợp lệ hoặc đã hết hạn.'})
     
-    # Lấy số sản phẩm được chọn từ session
+    # KIỂM TRA: User đã đăng nhập chưa?
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'message': 'Vui lòng đăng nhập để sử dụng mã giảm giá.'
+        })
+    
+    # KIỂM TRA: Voucher có giới hạn email không?
+    if coupon.usage_type == 'specific':
+        user_email = request.user.email.lower()
+        target_email = coupon.specific_email.lower() if coupon.specific_email else ''
+        
+        if user_email != target_email:
+            return JsonResponse({
+                'success': False,
+                'message': f'Xin lỗi tài khoản của bạn không thể dùng được Voucher này.'
+            })
+    
+    # KIỂM TRA: User đã dùng voucher này chưa?
+    # Cách 1: Kiểm tra từ UserVoucher (is_used=True)
+    used_user_voucher = UserVoucher.objects.filter(
+        user=request.user,
+        coupon=coupon,
+        is_used=True
+    ).exists()
+    
+    # Cách 2: Kiểm tra từ Order history (nếu voucher cũ không có UserVoucher)
+    used_in_order = Order.objects.filter(
+        user=request.user,
+        coupon_code=coupon.code
+    ).exists()
+    
+    if used_user_voucher or used_in_order:
+        return JsonResponse({
+            'success': False,
+            'message': 'Bạn đã sử dụng voucher này rồi!'
+        })
+    
+    # Lấy sản phẩm được chọn từ POST hoặc session
     cart = get_or_create_cart(request)
-    selected_items = request.session.get('selected_cart_items', [])
+    
+    # Thử lấy từ POST trước
+    selected_items_post = request.POST.get('selected_items', '')
+    if selected_items_post:
+        try:
+            import json
+            selected_items = json.loads(selected_items_post)
+            # Lưu vào session để giữ trạng thái
+            request.session['selected_cart_items'] = [int(id) for id in selected_items]
+        except:
+            selected_items = request.session.get('selected_cart_items', [])
+    else:
+        selected_items = request.session.get('selected_cart_items', [])
     
     # KIỂM TRA: Nếu chưa chọn sản phẩm nào, báo lỗi
     if not selected_items:
@@ -1492,8 +1551,41 @@ def apply_coupon(request):
             'message': f'Voucher chỉ áp dụng cho tối đa {coupon.max_product_limit} sản phẩm. Bạn đang chọn {product_count} sản phẩm.'
         })
     
-    # Lưu vào session CHỈ KHI qua được kiểm tra
+    # Lưu vào session
     request.session['applied_coupon'] = code
+    
+    # Tạo UserVoucher record cho user (nếu chưa có)
+    if request.user.is_authenticated:
+        existing_uv = None
+        
+        # Trường hợp 1: Voucher cho email cụ thể (usage_type='specific')
+        if coupon.usage_type == 'specific':
+            # Tìm UserVoucher gốc được tạo cho email cụ thể
+            existing_uv = UserVoucher.objects.filter(
+                coupon=coupon,
+                is_used=False
+            ).first()
+            
+            # Nếu tìm thấy UserVoucher gốc, cập nhật user cho record này
+            if existing_uv:
+                existing_uv.user = request.user
+                existing_uv.save()
+        
+        # Trường hợp 2: Voucher cho mọi người (usage_type='all')
+        if not existing_uv:
+            # Kiểm tra xem user hiện tại đã có UserVoucher chưa
+            existing_uv = UserVoucher.objects.filter(
+                user=request.user, 
+                coupon=coupon,
+                is_used=False
+            ).first()
+        
+        # Nếu không có record nào, tạo mới
+        if not existing_uv:
+            UserVoucher.objects.create(
+                user=request.user,
+                coupon=coupon
+            )
     
     # Tính lại tổng tiền
     subtotal = sum(item.subtotal for item in cart_items)
@@ -1687,11 +1779,30 @@ def admin_order_detail(request, order_id):
 def admin_vouchers(request):
     """
     Trang quản lý voucher (admin).
+    Hiển thị số lần voucher đã được sử dụng và danh sách đơn hàng.
     """
     vouchers = Coupon.objects.all().order_by('-id')
     
+    # Đếm số lần sử dụng và lấy danh sách đơn hàng cho mỗi voucher
+    voucher_data = {}
+    
+    for voucher in vouchers:
+        orders = Order.objects.filter(
+            coupon_code=voucher.code
+        ).exclude(
+            coupon_code__isnull=True
+        ).exclude(
+            coupon_code=''
+        ).select_related('user').order_by('-created_at')[:10]  # 10 đơn hàng gần nhất
+        
+        voucher_data[voucher.id] = {
+            'count': orders.count(),
+            'orders': list(orders)
+        }
+    
     context = {
         'vouchers': vouchers,
+        'voucher_data': voucher_data,
         'page_title': 'Quản lý voucher - Admin',
     }
     
@@ -1890,8 +2001,8 @@ def admin_user_detail(request, user_id):
     # Lấy đơn hàng gần đây (sử dụng related_name='orders')
     orders = user.orders.all().order_by('-created_at')[:10]
     
-    # Lấy voucher (sử dụng related_name='user_vouchers')
-    user_vouchers = user.user_vouchers.all().select_related('coupon')
+    # Lấy voucher (sử dụng related_name='user_vouchers') - CHỈ lấy voucher CHƯA sử dụng
+    user_vouchers = user.user_vouchers.filter(is_used=False).select_related('coupon')
     
     if request.method == 'POST':
         # Cập nhật thông tin user

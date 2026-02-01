@@ -141,12 +141,12 @@ class Product(models.Model):
     
     @property
     def formatted_original_price(self):
-        """Định dạng giá gốc theo VND."""
+        """Định dạng giá gốc theo đ."""
         return f"{int(self.original_price):,}đ"
     
     @property
     def formatted_sale_price(self):
-        """Định dạng giá khuyến mãi theo VND."""
+        """Định dạng giá khuyến mãi theo đ."""
         return f"{int(self.sale_price):,}đ"
 
 
@@ -316,7 +316,7 @@ class Coupon(models.Model):
     )
     min_order = models.PositiveIntegerField(
         default=0,
-        verbose_name="Đơn hàng tối thiểu (VND)"
+        verbose_name="Đơn hàng tối thiểu (đ)"
     )
     max_usage = models.PositiveIntegerField(
         default=0,
@@ -350,6 +350,11 @@ class Coupon(models.Model):
         default=0,
         verbose_name="Sản phẩm tối đa cùng lúc",
         help_text="0 = không giới hạn. Ví dụ: set 1 thì chỉ áp dụng cho 1 sản phẩm, set 3 thì áp dụng cho tối đa 3 sản phẩm."
+    )
+    used_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Đã sử dụng",
+        help_text="Số lần voucher đã được sử dụng trong đơn hàng"
     )
     
     class Meta:
@@ -398,6 +403,16 @@ class UserVoucher(models.Model):
         verbose_name="Mã giảm giá"
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ngày nhận")
+    is_used = models.BooleanField(default=False, verbose_name="Đã sử dụng")
+    used_at = models.DateTimeField(null=True, blank=True, verbose_name="Ngày sử dụng")
+    order = models.ForeignKey(
+        'Order',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='used_vouchers',
+        verbose_name="Đơn hàng sử dụng"
+    )
 
     class Meta:
         verbose_name = "Voucher của user"

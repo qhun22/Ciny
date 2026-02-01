@@ -47,23 +47,6 @@
                            required>
                 </div>
 
-                <!-- Số điện thoại -->
-                <div class="mb-4">
-                    <label for="phone_number" class="block text-gray-700 font-medium mb-2">
-                        Số điện thoại <span class="text-red-500">*</span>
-                    </label>
-                    <input type="tel"
-                           id="phone_number"
-                           name="phone_number"
-                           value="{{ request.POST.phone_number|default:'' }}"
-                           placeholder="Nhập số điện thoại (10 số, bắt đầu bằng 0)"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                           required>
-                    {% if form.phone_number.errors %}
-                    <p class="text-sm text-red-500 mt-1">{{ form.phone_number.errors.0 }}</p>
-                    {% endif %}
-                </div>
-
                 <!-- Mật khẩu -->
                 <div class="mb-4">
                     <label for="password1" class="block text-gray-700 font-medium mb-2">

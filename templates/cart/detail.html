@@ -48,8 +48,7 @@
                                 <tr class="border-t item-row hover:bg-gray-50 transition" data-price="{{ item.price }}" id="item_{{ item.id }}">
                                     <td class="px-4 py-4 text-center">
                                         <input type="checkbox" name="selected_items" value="{{ item.id }}" 
-                                               class="item-checkbox w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
-                                               {% if item.id|stringformat:"s" in request.session.selected_cart_items|default:"" %}checked{% endif %}>
+                                               class="item-checkbox w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary">
                                     </td>
                                     <td class="px-4 py-4">
                                         <div class="flex items-center gap-4">
@@ -108,7 +107,7 @@
                 <!-- Nút xóa các sản phẩm đã chọn -->
                 <div class="mt-4 flex justify-end">
                     <button type="button" onclick="removeSelectedItems()" 
-                            class="text-red-500 hover:text-red-700 font-medium px-4 py-2 rounded-lg hover:bg-red-50 transition flex items-center gap-2"
+                            class="bg-red-500 hover:bg-red-600 text-white font-medium px-5 py-2.5 rounded-lg transition flex items-center gap-2 shadow-sm"
                             id="deleteSelectedBtn" style="display: none;">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -292,11 +291,29 @@
 <!-- JavaScript xử lý giỏ hàng -->
 <script>
 // Voucher discount data (from server)
-const appliedCoupon = {% if applied_coupon %}{
-    code: '{{ applied_coupon.code }}',
-    discount_type: '{{ applied_coupon.discount_type }}',
-    discount_value: {{ applied_coupon.discount_value }}
-}{% else %}null{% endif %};
+// Mỗi lần vào trang, luôn bắt đầu với TRẠNG THÁI TRỐNG (không coupon)
+let appliedCoupon = null;
+
+// Không cần tempCoupon vì luôn reset khi vào trang
+// tempCoupon = null;
+
+// Khởi tạo trạng thái khi trang tải
+document.addEventListener('DOMContentLoaded', function() {
+    // Đếm sản phẩm được chọn từ checkbox trên giao diện
+    const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+    const selectedCount = checkedBoxes.length;
+    
+    console.log('Debug - Checkboxes checked:', selectedCount);
+    
+    // Luôn null khi vào trang (đã được reset từ server)
+    appliedCoupon = null;
+    console.log('Debug - AppliedCoupon is null (fresh start)');
+    
+    // Khởi tạo trạng thái ban đầu
+    updateSelectAllCheckbox();
+    toggleDeleteButton();
+    calculateTotal();
+});
 
 // Lưu danh sách sản phẩm được chọn vào session (chỉ khi có sản phẩm được chọn)
 function saveSelectedItemsToSession() {
@@ -333,7 +350,16 @@ document.getElementById('selectAll')?.addEventListener('change', function() {
             row.classList.remove('bg-blue-50');
         }
     });
+    updateSelectAllCheckbox();
     toggleDeleteButton();
+    
+    // Kiểm tra số lượng được chọn để reset voucher
+    const selectedCount = document.querySelectorAll('.item-checkbox:checked').length;
+    if (selectedCount === 0) {
+        appliedCoupon = null;
+        console.log('Debug - SelectAll uncheck: AppliedCoupon reset to null');
+    }
+    
     calculateTotal();
     saveSelectedItemsToSession();
 });
@@ -360,6 +386,16 @@ document.querySelectorAll('.item-checkbox').forEach(cb => {
         }
         updateSelectAllCheckbox();
         toggleDeleteButton();
+        
+        // Kiểm tra xem còn sản phẩm được chọn không
+        const selectedCount = document.querySelectorAll('.item-checkbox:checked').length;
+        
+        // Nếu không còn sản phẩm nào được chọn, reset voucher
+        if (selectedCount === 0) {
+            appliedCoupon = null;
+            console.log('Debug - Last item unchecked: AppliedCoupon reset to null');
+        }
+        
         calculateTotal();
         saveSelectedItemsToSession();
     });
@@ -427,60 +463,52 @@ function hideCouponError() {
     }
 }
 
-// Xử lý form coupon bằng AJAX - Lưu selected items trước khi áp dụng
+// Xử lý form coupon bằng AJAX - Gửi selected items cùng lúc với coupon code
 document.getElementById('couponForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
     
-    // TRƯỚC TIÊN: Lưu selected items vào session
+    // Lấy danh sách sản phẩm được chọn
     const selectedIds = [];
     document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
         selectedIds.push(cb.value);
     });
     
-    const saveFormData = new URLSearchParams();
-    saveFormData.append('selected_items', JSON.stringify(selectedIds));
+    const couponCode = document.getElementById('couponCode').value;
     
-    // Gọi API lưu selected items trước
-    fetch('/cart/select-items/', {
+    // Gọi API áp dụng coupon (gửi cùng selected items)
+    const formData = new URLSearchParams();
+    formData.append('code', couponCode);
+    formData.append('selected_items', JSON.stringify(selectedIds));
+    
+    fetch(this.action, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-CSRFToken': getCookie('csrftoken'),
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: saveFormData.toString()
+        body: formData.toString()
     })
-    .then(response => response.json())
-    .then(saveData => {
-        // SAU KHI lưu selected items thành công, mới áp dụng coupon
-        const couponFormData = new URLSearchParams();
-        couponFormData.append('code', document.getElementById('couponCode').value);
-        
-        return fetch(this.action, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': getCookie('csrftoken'),
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: couponFormData.toString()
-        });
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
     })
-    .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // KHÔNG reload trang - cập nhật UI động
+            // Ẩn thông báo lỗi
             const errorDiv = document.getElementById('couponError');
             if (errorDiv) errorDiv.classList.add('hidden');
             
-            // Cập nhật biến appliedCoupon để calculateTotal() sử dụng
+            // Cập nhật biến appliedCoupon
             appliedCoupon = {
                 code: data.coupon_code,
                 discount_value: data.discount_value,
                 discount_type: data.discount_type
             };
             
-            // Tính lại tổng tiền với voucher
+            // Tính lại tổng tiền
             calculateTotal();
             
             // Hiển thị thông báo thành công
@@ -491,12 +519,15 @@ document.getElementById('couponForm')?.addEventListener('submit', function(e) {
             successDiv.id = 'couponSuccess';
             couponForm.parentNode.insertBefore(successDiv, couponForm.nextSibling);
             
-            // Ẩn form sau khi áp dụng thành công
+            // Ẩn form
             couponForm.style.display = 'none';
         } else {
+            // Hiển thị lỗi từ server
             const errorDiv = document.getElementById('couponError');
-            errorDiv.textContent = data.message;
-            errorDiv.classList.remove('hidden');
+            if (errorDiv) {
+                errorDiv.textContent = data.message;
+                errorDiv.classList.remove('hidden');
+            }
         }
     })
     .catch(error => {
@@ -586,7 +617,27 @@ function removeItem(itemId) {
             }
         }).then(response => response.json()).then(data => {
             if (data.success) {
-                location.reload();
+                // Xóa dòng sản phẩm
+                const row = document.getElementById(`item_${itemId}`);
+                if (row) {
+                    row.remove();
+                }
+                
+                // Cập nhật số lượng sản phẩm còn lại
+                const remainingRows = document.querySelectorAll('.item-row');
+                
+                if (remainingRows.length === 0) {
+                    // Giỏ hàng trống - reload để hiện empty state
+                    location.reload();
+                } else {
+                    // Cập nhật subtotal và tính lại tổng
+                    document.getElementById('subtotalPrice').textContent = data.subtotal.toLocaleString('vi-VN') + 'đ';
+                    calculateTotal();
+                }
+                
+                // Cập nhật select all checkbox
+                updateSelectAllCheckbox();
+                toggleDeleteButton();
             }
         });
     }
@@ -600,9 +651,37 @@ function removeSelectedItems() {
     }
     
     if (confirm(`Bạn có chắc muốn xóa ${checked.length} sản phẩm đã chọn?`)) {
-        const form = document.getElementById('cartForm');
-        form.action = '/cart/remove/bulk/';
-        form.submit();
+        // Xóa từng sản phẩm bằng AJAX
+        let deleted = 0;
+        const totalToDelete = checked.length;
+        
+        checked.forEach(cb => {
+            const itemId = cb.value;
+            fetch(`/cart/remove/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => response.json()).then(data => {
+                deleted++;
+                const row = document.getElementById(`item_${itemId}`);
+                if (row) row.remove();
+                
+                if (deleted === totalToDelete) {
+                    // Kiểm tra giỏ hàng trống
+                    const remainingRows = document.querySelectorAll('.item-row');
+                    if (remainingRows.length === 0) {
+                        location.reload();
+                    } else {
+                        // Cập nhật UI
+                        updateSelectAllCheckbox();
+                        toggleDeleteButton();
+                        calculateTotal();
+                    }
+                }
+            });
+        });
     }
 }
 

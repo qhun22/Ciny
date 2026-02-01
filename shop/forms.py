@@ -29,15 +29,6 @@ class RegistrationForm(UserCreationForm):
             'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
         })
     )
-    phone_number = forms.CharField(
-        label="Số điện thoại",
-        max_length=10,
-        min_length=10,
-        widget=forms.TextInput(attrs={
-            'placeholder': 'Nhập số điện thoại (10 số)',
-            'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-        })
-    )
     password1 = forms.CharField(
         label="Mật khẩu",
         widget=forms.PasswordInput(attrs={
@@ -57,7 +48,7 @@ class RegistrationForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ['email', 'full_name', 'phone_number', 'password1', 'password2']
+        fields = ['email', 'full_name', 'password1', 'password2']
 
     def clean_email(self):
         """Kiểm tra email đã tồn tại chưa."""
@@ -65,14 +56,6 @@ class RegistrationForm(UserCreationForm):
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("Email này đã được đăng ký.")
         return email
-
-    def clean_phone_number(self):
-        """Kiểm tra số điện thoại đã tồn tại chưa."""
-        phone = self.cleaned_data.get('phone_number')
-        # Check if any user has this phone in their username (for backwards compatibility)
-        if User.objects.filter(username=phone).exists():
-            raise forms.ValidationError("Số điện thoại này đã được đăng ký.")
-        return phone
 
     def save(self, commit=True):
         """
@@ -87,12 +70,8 @@ class RegistrationForm(UserCreationForm):
         
         if commit:
             user.save()
-            # Save phone number to UserProfile
-            phone = self.cleaned_data['phone_number']
-            UserProfile.objects.update_or_create(
-                user=user,
-                defaults={'phone_number': phone}
-            )
+            # Tạo empty UserProfile (không có phone_number)
+            UserProfile.objects.create(user=user)
         
         return user
 

@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
@@ -92,6 +93,7 @@
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Ai có thể dùng</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Hạn sử dụng</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Trạng thái</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Check</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Hành động</th>
                                 </tr>
                             </thead>
@@ -172,6 +174,40 @@
                                         {% else %}
                                         <span class="status-badge status-cancelled">Ngừng</span>
                                         {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% with voucher_data|dictgetitem:voucher.id as data %}
+                                        {% if data.count > 0 %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-sm">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                            Da su dung ({{ data.count }})
+                                        </span>
+                                        <!-- Hiển thị danh sách đơn hàng -->
+                                        {% if data.orders %}
+                                        <div class="mt-2 text-xs text-gray-500">
+                                            {% for order in data.orders %}
+                                            <div class="flex items-center gap-1">
+                                                <a href="{% url 'admin_order_detail' order.id %}" class="text-blue-600 hover:underline">
+                                                    #{{ order.id }}
+                                                </a>
+                                                <span>-</span>
+                                                <span>{{ order.user.username|default:"Anonymous" }}</span>
+                                                <span class="text-gray-400">({{ order.total|floatformat:"0"|intcomma }}đ)</span>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        {% else %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-500 rounded text-sm">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            Chua su dung
+                                        </span>
+                                        {% endif %}
+                                        {% endwith %}
                                     </td>
                                     <td class="py-3 px-4">
                                         <div class="flex gap-2">
