@@ -5,12 +5,12 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<!-- ==================== BANNER CHÍNH (Slider) ==================== -->
+
 <section class="max-w-7xl mx-auto px-4 py-6">
     <div class="relative rounded-2xl overflow-hidden shadow-xl">
-        <!-- Slider Container -->
+
         <div class="relative h-[400px] bg-gray-900" id="mainSlider">
-            <!-- Slide 1 - IPHONE -->
+
             <div class="banner-slide absolute inset-0 opacity-100 transition-opacity duration-700 ease-in-out" data-slide="0">
                 <video id="video-iphone" class="w-full h-full object-cover transition-transform duration-700" autoplay muted loop playsinline preload="auto">
                     <source src="{% static 'videos/applv1.mp4' %}" type="video/mp4">
@@ -22,7 +22,7 @@
                     </div>
                 </div>
             </div>
-            <!-- Slide 2 - SAMSUNG -->
+
             <div class="banner-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out" data-slide="1">
                 <video id="video-samsung" class="w-full h-full object-cover transition-transform duration-700" autoplay muted loop playsinline preload="auto">
                     <source src="{% static 'videos/sams.mp4' %}" type="video/mp4">
@@ -34,7 +34,7 @@
                     </div>
                 </div>
             </div>
-            <!-- Slide 3 - XIAOMI -->
+          
             <div class="banner-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out" data-slide="2">
                 <video id="video-xiaomi" class="w-full h-full object-cover transition-transform duration-700" autoplay muted loop playsinline preload="auto">
                     <source src="{% static 'videos/xiao.mp4' %}" type="video/mp4">
@@ -46,7 +46,7 @@
                     </div>
                 </div>
             </div>
-            <!-- Slide 4 - OPPO -->
+           
             <div class="banner-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out" data-slide="3">
                 <video id="video-oppo" class="w-full h-full object-cover transition-transform duration-700" autoplay muted loop playsinline preload="auto">
                     <source src="{% static 'videos/ooppv1.mp4' %}" type="video/mp4">
@@ -59,13 +59,13 @@
                 </div>
             </div>
         </div>
-        <!-- Nút chuyển trái -->
+        <!-- Chuyển trái -->
         <button id="prevBtn" class="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/90 hover:bg-white text-gray-700 text-lg rounded-full flex items-center justify-center shadow-md transition hover:scale-105 z-10 cursor-pointer">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
         </button>
-        <!-- Nút chuyển phải -->
+        <!-- Chuyển phải -->
         <button id="nextBtn" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/90 hover:bg-white text-gray-700 text-lg rounded-full flex items-center justify-center shadow-md transition hover:scale-105 z-10 cursor-pointer">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -81,7 +81,6 @@
     </div>
 </section>
 
-<!-- Slider JavaScript -->
 <script src="{% static 'js/home.js' %}"></script>
 
 <!-- Danh sach san pham -->
@@ -224,15 +223,15 @@
     </div>
 </section>
 
-<!-- ==================== KHUYẾN MÃI ĐẶC BIỆT ==================== -->
+{% comment %} KHUYEN MAI DAC BIET {% endcomment %}
 {% if show_promotion and special_promotions %}
 <section class="max-w-7xl mx-auto px-4 pb-4">
     <div class="promo-section rounded-xl overflow-hidden">
-        <!-- Banner khuyến mãi -->
+        {% comment %} Banner khuyến mãi {% endcomment %}
         <div class="promo-banner">
             <img src="{% static 'banners/bnv.png' %}" alt="Khuyến mãi đặc biệt">
         </div>
-        <!-- Danh sách sản phẩm khuyến mãi (Max 5 sản phẩm) -->
+        {% comment %} Danh sách sản phẩm khuyến mãi (Max 5 sản phẩm) {% endcomment %}
         <div class="promo-products">
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 p-4">
                 {% for promo in special_promotions %}
@@ -253,8 +252,8 @@
                             {{ promo.product.name }}
                         </h3>
                         <div class="promo-price-block">
-                            <span class="promo-current-price"><span class="price-format">{{ promo.discounted_price|format_vnd }}</span>₫</span>
-                            <span class="promo-original-price"><span class="price-format">{{ promo.product.original_price|format_vnd }}</span>₫</span>
+                            <span class="promo-current-price"><span class="price-format">{{ promo.discounted_price|format_vnd }}</span></span>
+                            <span class="promo-original-price"><span class="price-format">{{ promo.product.original_price|format_vnd }}</span></span>
                         </div>
                     </div>
                 </a>
@@ -265,13 +264,13 @@
 </section>
 {% endif %}
 
-<!-- Danh sach san pham -->
+{% comment %} DANH SACH LIST SAN PHAM {% endcomment %}
 <section id="products" class="py-6">
     <div class="max-w-7xl mx-auto px-4">
-        <!-- Tieu de voi hieu ung -->
+        {% comment %} Tiêu đề x Hiệu ứng 2 bên {% endcomment %}
         <div class="flex items-center justify-center gap-4 mb-6">
             <div class="flex-1 h-px bg-gradient-to-l from-primary to-transparent max-w-[80px]"></div>
-            <h2 class="text-xl font-bold text-dark whitespace-nowrap">SAN PHAM NOI BAT</h2>
+            <h2 class="text-xl font-bold text-dark whitespace-nowrap">SẢN PHẨM NỔI BẬT</h2>
             <div class="flex-1 h-px bg-gradient-to-r from-primary to-transparent max-w-[80px]"></div>
         </div>
         
@@ -280,7 +279,7 @@
             {% for product in products %}
             <a href="{% url 'product_detail' product.id %}" class="group block no-underline">
                 <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg hover:border-gray-300 hover:-translate-y-1 transition-all duration-300">
-                    <!-- Hinh anh san pham -->
+                    {% comment %} Hình ảnh sản phẩm {% endcomment %}
                     <div class="aspect-[3/4] relative overflow-hidden bg-white">
                         {% if product.main_image %}
                         <img src="{{ product.main_image.url }}" alt="{{ product.name }}"
@@ -291,7 +290,7 @@
                             class="w-full h-full object-contain">
                         {% endif %}
                         
-                        <!-- Badge giam gia -->
+                        {% comment %} Badge giảm giá {% endcomment %}
                         {% if product.discount_percent > 0 %}
                         <div class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
                             GIẢM {{ product.discount_percent|floatformat:0 }}%
@@ -299,20 +298,20 @@
                         {% endif %}
                     </div>
                     
-                    <!-- Thong tin san pham -->
+                    {% comment %} Thông tin sản phẩm {% endcomment %}
                     <div class="p-3 bg-white">
                         <h3 class="text-sm font-medium text-gray-800 mb-2 group-hover:text-primary transition-colors line-clamp-2">
                             {{ product.name }}
                         </h3>
                         <div>
-                            <!-- Gia khuyen mai -->
+                            {% comment %} Giá khuyến mãi {% endcomment %}
                             <div class="text-red-600 font-bold text-sm">
-                                <span class="price-format">{{ product.sale_price|format_vnd }}</span>₫
+                                <span class="price-format">{{ product.sale_price|format_vnd }}</span>
                             </div>
-                            <!-- Gia goc (gach ngang) -->
+                            {% comment %} Giá gốc (gạch ngang) {% endcomment %}
                             {% if product.discount_percent > 0 %}
                             <div class="text-gray-400 line-through text-xs">
-                                <span class="price-format">{{ product.original_price|format_vnd }}</span>₫
+                                <span class="price-format">{{ product.original_price|format_vnd }}</span>
                             </div>
                             {% endif %}
                         </div>
@@ -324,25 +323,24 @@
         
         {% else %}
         <div class="text-center py-12">
-            <p class="text-gray-500 text-lg">Chua co san pham nao.</p>
-            <p class="text-gray-400">Vui long quay lai sau.</p>
+            <p class="text-gray-500 text-lg">Chưa có sản phẩm nào.</p>
+            <p class="text-gray-400">Quay lại sau nhé bạn ơi.</p>
         </div>
         {% endif %}
     </div>
 </section>
 
-<!-- Tai sao chon chung toi -->
 <section class="bg-gray-50 py-12">
     <div class="max-w-7xl mx-auto px-4">
-        <!-- Tieu de -->
+
         <div class="flex items-center justify-center gap-4 mb-10">
             <div class="flex-1 h-px bg-gradient-to-l from-primary to-transparent max-w-[80px]"></div>
-            <h2 class="text-xl font-bold text-dark whitespace-nowrap">TAI SAO CHON PHONESHOP?</h2>
+            <h2 class="text-xl font-bold text-dark whitespace-nowrap">TAỊ SAO CHỌN QHUN22 MOBILE?</h2>
             <div class="flex-1 h-px bg-gradient-to-r from-primary to-transparent max-w-[80px]"></div>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Hàng chính hãng -->
+
             <div class="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
                     <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -350,10 +348,9 @@
                     </svg>
                 </div>
                 <h3 class="text-lg font-semibold text-gray-800 mb-2">Hàng Chính Hãng</h3>
-                <p class="text-gray-600 text-sm">Cam kết 100% sản phẩm chính hãng, đầy đủ bill.</p>
+                <p class="text-gray-600 text-sm">Cam kết 100% sản phẩm chính hãng, đầy đủ.</p>
             </div>
             
-            <!-- Giao hàng nhanh -->
             <div class="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
                     <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -364,7 +361,6 @@
                 <p class="text-gray-600 text-sm">Giao hàng tận nơi trong 1-2 ngày làm việc.</p>
             </div>
             
-            <!-- Bảo hành uy tín -->
             <div class="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
                     <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -372,7 +368,7 @@
                     </svg>
                 </div>
                 <h3 class="text-lg font-semibold text-gray-800 mb-2">Bảo Hành Uy Tín</h3>
-                <p class="text-gray-600 text-sm">Bảo hành chính hãng từ 12-24 tháng.</p>
+                <p class="text-gray-600 text-sm">Bảo hành chính hãng từ 6-12 tháng.</p>
             </div>
         </div>
     </div>

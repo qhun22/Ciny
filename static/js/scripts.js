@@ -54,7 +54,7 @@ function updatePriceDisplay(selectedStorage) {
     
     if (priceElement && basePrice > 0) {
         const newPrice = basePrice + selectedStoragePrice;
-        priceElement.textContent = newPrice.toLocaleString('vi-VN') + ' đ';
+        priceElement.textContent = newPrice.toLocaleString('vi-VN') + 'đ';
     }
     
     if (storageInfo && selectedStorage) {
@@ -212,7 +212,7 @@ function updatePriceWithCoupon(finalPrice, discountPercent) {
     if (priceContainer) {
         const newHtml = '<div class="flex items-center gap-3 mb-2">' +
             '<span class="text-gray-400 line-through text-lg" id="originalDisplay"></span>' +
-            '<span class="text-red-600 text-3xl font-bold" id="currentPrice">' + parseInt(finalPrice).toLocaleString() + ' ' đ</span>' +
+            '<span class="text-red-600 text-3xl font-bold" id="currentPrice">' + parseInt(finalPrice).toLocaleString() + ' đ</span>' +
             '<span class="bg-red-500 text-white px-2 py-1 rounded text-sm font-bold">-' + discountPercent + '%</span>' +
             '</div>' +
             '<p class="text-green-600 text-sm">Da ap dung ma giam gia!</p>';
@@ -267,10 +267,7 @@ function initGallery() {
  * Format so tien thanh dinh dang đ
  */
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN', {
-        style: 'currency',
-        currency: '' đ'
-    }).format(amount);
+    return amount.toLocaleString('vi-VN') + 'đ';
 }
 
 // Initialize when page is loaded

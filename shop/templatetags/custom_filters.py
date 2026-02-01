@@ -15,7 +15,7 @@ def format_vnd(value):
     Usage: {{ price|format_vnd }}
     """
     try:
-        return f"{int(value):,} đ"
+        return f"{int(value):,}đ"
     except (ValueError, TypeError):
         return f"{value}"
 
@@ -28,7 +28,7 @@ def format_vnd_str(value):
     Usage: {{ "1000000"|format_vnd_str }}
     """
     try:
-        return f"{int(value):,} đ"
+        return f"{int(value):,}đ"
     except (ValueError, TypeError):
         return f"{value}"
 
