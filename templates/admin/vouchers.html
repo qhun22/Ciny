@@ -86,6 +86,8 @@
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Mã</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Mô tả</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Giảm giá</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Đơn tối thiểu</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-medium">Ai có thể dùng</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Hạn sử dụng</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Trạng thái</th>
                                     <th class="text-left py-3 px-4 text-gray-600 font-medium">Hành động</th>
@@ -95,21 +97,57 @@
                                 {% for voucher in vouchers %}
                                 <tr class="border-b hover:bg-gray-50">
                                     <td class="py-3 px-4">
-                                        <span class="font-bold text-blue-600">{{ voucher.code }}</span>
+                                        <span class="font-bold text-blue-600 text-lg">{{ voucher.code }}</span>
                                     </td>
-                                    <td class="py-3 px-4">{{ voucher.description|truncatechars:50 }}</td>
-                                    <td class="py-3 px-4">
-                                        {% if voucher.discount_type == 'percent' %}
-                                        <span class="text-red-600 font-medium">-{{ voucher.discount_value }}%</span>
+                                    <td class="py-3 px-4 text-gray-600 max-w-xs">
+                                        {% if voucher.description %}
+                                        <span class="truncate block" title="{{ voucher.description }}">{{ voucher.description|truncatechars:50 }}</span>
                                         {% else %}
-                                        <span class="text-red-600 font-medium">-{{ voucher.discount_value|floatformat:"0"|intcomma }}đ</span>
+                                        <span class="text-gray-400 italic">Không có mô tả</span>
                                         {% endif %}
                                     </td>
-                                    <td class="py-3 px-4 text-gray-500">
-                                        {% if voucher.expires_at %}
-                                        {{ voucher.expires_at|date:"d/m/Y" }}
+                                    <td class="py-3 px-4">
+                                        {% if voucher.discount_type == 'percent' %}
+                                        <span class="text-red-600 font-bold text-lg">-{{ voucher.discount_value }}%</span>
                                         {% else %}
-                                        Không hết hạn
+                                        <span class="text-red-600 font-bold text-lg">-{{ voucher.discount_value|floatformat:"0"|intcomma }}đ</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4 text-gray-600">
+                                        {{ voucher.min_order|floatformat:"0"|intcomma }}đ
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if voucher.usage_type == 'specific' %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded text-sm" title="{{ voucher.specific_email }}">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                            </svg>
+                                            {{ voucher.specific_email|truncatechars:20 }}
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-sm">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                            </svg>
+                                            Mọi người
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if voucher.expires_at %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded text-sm">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                            {{ voucher.expires_at|date:"d/m/Y H:i" }}
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-sm">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                            Vô thời hạn
+                                        </span>
                                         {% endif %}
                                     </td>
                                     <td class="py-3 px-4">
@@ -151,5 +189,6 @@
     </div>
 </div>
 {% endblock %}
+
 
 

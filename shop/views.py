@@ -1583,7 +1583,7 @@ def admin_vouchers(request):
     """
     Trang quản lý voucher (admin).
     """
-    vouchers = Coupon.objects.all().order_by('-created_at')
+    vouchers = Coupon.objects.all().order_by('-id')
     
     context = {
         'vouchers': vouchers,
@@ -1602,8 +1602,12 @@ def admin_voucher_add(request):
         code = request.POST.get('code', '').strip().upper()
         description = request.POST.get('description', '').strip()
         discount_type = request.POST.get('discount_type')
-        discount_value = request.POST.get('discount_value', '0')
-        min_order_amount = request.POST.get('min_order_amount', '0')
+        discount_value = int(request.POST.get('discount_value', '0') or 0)
+        max_discount = int(request.POST.get('max_discount', '0') or 0)
+        min_order = int(request.POST.get('min_order', '0') or 0)
+        usage_type = request.POST.get('usage_type', 'all')
+        specific_email = request.POST.get('specific_email', '').strip() if usage_type == 'specific' else None
+        is_indefinite = request.POST.get('is_indefinite') == 'on'
         expires_at = request.POST.get('expires_at')
         is_active = request.POST.get('is_active') == 'on'
         
@@ -1613,8 +1617,11 @@ def admin_voucher_add(request):
                 description=description,
                 discount_type=discount_type,
                 discount_value=discount_value,
-                min_order_amount=min_order_amount,
-                expires_at=expires_at if expires_at else None,
+                max_discount=max_discount,
+                min_order=min_order,
+                usage_type=usage_type,
+                specific_email=specific_email,
+                expires_at=None if is_indefinite else (expires_at if expires_at else None),
                 is_active=is_active
             )
             messages.success(request, 'Tạo voucher thành công!')
@@ -1640,10 +1647,14 @@ def admin_voucher_edit(request, voucher_id):
         voucher.code = request.POST.get('code', '').strip().upper()
         voucher.description = request.POST.get('description', '').strip()
         voucher.discount_type = request.POST.get('discount_type')
-        voucher.discount_value = request.POST.get('discount_value', '0')
-        voucher.min_order_amount = request.POST.get('min_order_amount', '0')
+        voucher.discount_value = int(request.POST.get('discount_value', '0') or 0)
+        voucher.max_discount = int(request.POST.get('max_discount', '0') or 0)
+        voucher.min_order = int(request.POST.get('min_order', '0') or 0)
+        voucher.usage_type = request.POST.get('usage_type', 'all')
+        voucher.specific_email = request.POST.get('specific_email', '').strip() if request.POST.get('usage_type') == 'specific' else None
+        is_indefinite = request.POST.get('is_indefinite') == 'on'
         expires_at = request.POST.get('expires_at')
-        voucher.expires_at = expires_at if expires_at else None
+        voucher.expires_at = None if is_indefinite else (expires_at if expires_at else None)
         voucher.is_active = request.POST.get('is_active') == 'on'
         voucher.save()
         messages.success(request, 'Cập nhật voucher thành công!')

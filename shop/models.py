@@ -289,10 +289,20 @@ class Coupon(models.Model):
         ('fixed', 'Giảm số tiền cố định'),
     ]
     
+    USAGE_TYPE_CHOICES = [
+        ('all', 'Mọi người'),
+        ('specific', 'Nhập email'),
+    ]
+    
     code = models.CharField(
         max_length=50, 
         unique=True, 
         verbose_name="Mã giảm giá"
+    )
+    description = models.TextField(
+        blank=True,
+        default='',
+        verbose_name="Mô tả voucher"
     )
     discount_type = models.CharField(
         max_length=10,
@@ -304,14 +314,31 @@ class Coupon(models.Model):
         default=0,
         verbose_name="Giá trị giảm"
     )
-    max_discount = models.PositiveIntegerField(
-        default=0,
-        verbose_name="Giảm tối đa (VND)",
-        help_text="Áp dụng cho loại giảm phần trăm. 0 = không giới hạn."
-    )
     min_order = models.PositiveIntegerField(
         default=0,
         verbose_name="Đơn hàng tối thiểu (VND)"
+    )
+    max_usage = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Số người sử dụng tối đa",
+        help_text="0 = không giới hạn số người"
+    )
+    max_usage_per_user = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Mỗi user sử dụng tối đa",
+        help_text="Số lần mỗi user được sử dụng voucher này"
+    )
+    usage_type = models.CharField(
+        max_length=10,
+        choices=USAGE_TYPE_CHOICES,
+        default='all',
+        verbose_name="Ai có thể sử dụng"
+    )
+    specific_email = models.EmailField(
+        blank=True,
+        null=True,
+        verbose_name="Email áp dụng",
+        help_text="Nhập email người dùng được sử dụng voucher này"
     )
     is_active = models.BooleanField(default=True, verbose_name="Còn hiệu lực")
     expires_at = models.DateTimeField(

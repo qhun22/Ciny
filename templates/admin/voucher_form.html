@@ -76,76 +76,225 @@
 
                 <!-- Form -->
                 <div class="admin-card">
-                    <form method="POST">
+                    <form method="POST" id="voucherForm">
                         {% csrf_token %}
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Mã voucher -->
-                            <div>
-                                <label class="block text-gray-700 mb-2">Mã voucher *</label>
-                                <input type="text" name="code" 
-                                       value="{{ voucher.code|default:'' }}" required
-                                       placeholder="Ví dụ: SUMMER2024"
-                                       class="admin-input" style="text-transform: uppercase;">
+                        <!-- THÔNG TIN CƠ BẢN -->
+                        <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                            <h3 class="text-blue-800 font-semibold mb-3 flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Thông tin cơ bản
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Mã voucher -->
+                                <div>
+                                    <label class="block text-gray-700 mb-2">Mã voucher *</label>
+                                    <input type="text" name="code" 
+                                           value="{{ voucher.code|default:'' }}" required
+                                           placeholder="Ví dụ: SUMMER2024"
+                                           class="admin-input" style="text-transform: uppercase;">
+                                </div>
                             </div>
                             
-                            <!-- Loại giảm giá -->
-                            <div>
-                                <label class="block text-gray-700 mb-2">Loại giảm giá *</label>
-                                <select name="discount_type" class="admin-input">
-                                    <option value="percent" {% if voucher.discount_type == 'percent' %}selected{% endif %}>Phần trăm (%)</option>
-                                    <option value="fixed" {% if voucher.discount_type == 'fixed' %}selected{% endif %}>Tiền cố định (đ)</option>
-                                </select>
+                            <!-- Mô tả voucher -->
+                            <div class="mt-4">
+                                <label class="block text-gray-700 mb-2">Mô tả voucher</label>
+                                <textarea name="description" rows="3"
+                                          placeholder="Nhập mô tả voucher (tùy chọn)..."
+                                          class="admin-input">{{ voucher.description|default:'' }}</textarea>
                             </div>
                         </div>
                         
-                        <!-- Mô tả -->
-                        <div class="mt-4">
-                            <label class="block text-gray-700 mb-2">Mô tả</label>
-                            <textarea name="description" rows="3"
-                                      placeholder="Nhập mô tả voucher..."
-                                      class="admin-input">{{ voucher.description|default:'' }}</textarea>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <!-- Giá trị giảm -->
-                            <div>
-                                <label class="block text-gray-700 mb-2">Giá trị giảm *</label>
-                                <input type="number" name="discount_value" 
-                                       value="{{ voucher.discount_value|default:0 }}" required
-                                       min="0"
-                                       placeholder="Nhập giá trị giảm"
-                                       class="admin-input">
+                        <!-- GIÁ TRỊ GIẢM GIÁ -->
+                        <div class="bg-green-50 rounded-lg p-4 mb-4">
+                            <h3 class="text-green-800 font-semibold mb-3 flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Giá trị giảm giá
+                            </h3>
+                            
+                            <!-- Button Xem them -->
+                            <button type="button" onclick="toggleDiscountOptions()" 
+                                    class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                                <span id="discount_type_label">
+                                    {% if voucher.discount_type == 'percent' %}Phần trăm (%){% else %}Tiền cố định (đ){% endif %}
+                                </span>
+                                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            
+                            <!-- Dropdown options (an mac dinh) -->
+                            <div id="discount_options" class="hidden mt-2 p-3 bg-white rounded-lg border border-gray-200 shadow-lg max-h-48 overflow-y-auto">
+                                <label class="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 transition-colors">
+                                    <input type="radio" name="discount_type" value="percent" 
+                                           {% if voucher.discount_type != 'fixed' %}checked{% endif %}
+                                           class="w-5 h-5 text-green-600"
+                                           onchange="selectDiscountType('percent')">
+                                    <span class="font-medium text-gray-700">Phần trăm (%)</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 transition-colors">
+                                    <input type="radio" name="discount_type" value="fixed" 
+                                           {% if voucher.discount_type == 'fixed' %}checked{% endif %}
+                                           class="w-5 h-5 text-green-600"
+                                           onchange="selectDiscountType('fixed')">
+                                    <span class="font-medium text-gray-700">Tiền cố định (đ)</span>
+                                </label>
                             </div>
                             
-                            <!-- Giá trị đơn tối thiểu -->
-                            <div>
-                                <label class="block text-gray-700 mb-2">Giá trị đơn tối thiểu</label>
-                                <input type="number" name="min_order_amount" 
-                                       value="{{ voucher.min_order_amount|default:0 }}" required
-                                       min="0"
-                                       placeholder="Nhập giá trị tối thiểu"
-                                       class="admin-input">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <!-- Gia tri giam theo % -->
+                                <div id="percent_input_container" class="{% if voucher.discount_type == 'fixed' %}opacity-50{% endif %}">
+                                    <label class="block text-gray-700 mb-2">Nhập phần trăm (%)</label>
+                                    <div class="relative">
+                                        <input type="number" name="discount_value_percent" 
+                                               value="{% if voucher.discount_type != 'fixed' %}{{ voucher.discount_value|default:0 }}{% endif %}"
+                                               min="0" max="100"
+                                               placeholder="0"
+                                               class="admin-input pr-8 {% if voucher.discount_type == 'fixed' %}pointer-events-none{% endif %}"
+                                               {% if voucher.discount_type == 'fixed' %}disabled{% endif %}
+                                               oninput="updateDiscountValue('percent', this.value)">
+                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Gia tri giam theo tien -->
+                                <div id="fixed_input_container" class="{% if voucher.discount_type != 'fixed' %}opacity-50{% endif %}">
+                                    <label class="block text-gray-700 mb-2">Nhập số tiền (đ)</label>
+                                    <input type="number" name="discount_value_fixed" 
+                                           value="{% if voucher.discount_type == 'fixed' %}{{ voucher.discount_value|default:0 }}{% endif %}"
+                                           min="0"
+                                           placeholder="0"
+                                           class="admin-input {% if voucher.discount_type != 'fixed' %}pointer-events-none{% endif %}"
+                                           {% if voucher.discount_type != 'fixed' %}disabled{% endif %}
+                                           oninput="updateDiscountValue('fixed', this.value)">
+                                </div>
+                            </div>
+                            
+                            <!-- Hidden input for actual discount_value -->
+                            <input type="hidden" name="discount_value" id="discount_value" value="{{ voucher.discount_value|default:0 }}">
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <!-- Giảm tối đa -->
+                                <div>
+                                    <label class="block text-gray-700 mb-2">Giảm tối đa (VND)</label>
+                                    <input type="number" name="max_discount" 
+                                           value="{{ voucher.max_discount|default:0 }}"
+                                           min="0"
+                                           placeholder="0 = không giới hạn"
+                                           class="admin-input">
+                                </div>
+                                
+                                <!-- Đơn hàng tối thiểu -->
+                                <div>
+                                    <label class="block text-gray-700 mb-2">Đơn hàng tối thiểu (VND)</label>
+                                    <input type="number" name="min_order" 
+                                           value="{{ voucher.min_order|default:0 }}"
+                                           min="0"
+                                           placeholder="Nhập giá trị tối thiểu"
+                                           class="admin-input">
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <!-- Hạn sử dụng -->
-                            <div>
-                                <label class="block text-gray-700 mb-2">Hạn sử dụng</label>
-                                <input type="datetime-local" name="expires_at"
-                                       value="{{ voucher.expires_at|date:'Y-m-d H:i' if voucher.expires_at else '' }}"
-                                       class="admin-input">
+                        <!-- AI CÓ THỂ SỬ DỤNG -->
+                        <div class="bg-yellow-50 rounded-lg p-4 mb-4">
+                            <h3 class="text-yellow-800 font-semibold mb-3 flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                                Ai có thể sử dụng voucher?
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Chế độ sử dụng -->
+                                <div>
+                                    <label class="block text-gray-700 mb-2">Chế độ áp dụng</label>
+                                    <div class="space-y-2">
+                                        <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+                                            <input type="radio" name="usage_type" value="all" 
+                                                   {% if voucher.usage_type != 'specific' %}checked{% endif %}
+                                                   class="w-5 h-5 text-blue-600"
+                                                   onchange="toggleEmailField()">
+                                            <div>
+                                                <span class="font-medium text-gray-700">Mọi người</span>
+                                                <p class="text-xs text-gray-500">Tất cả người dùng trong hệ thống đều có thể sử dụng</p>
+                                            </div>
+                                        </label>
+                                        <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+                                            <input type="radio" name="usage_type" value="specific" 
+                                                   {% if voucher.usage_type == 'specific' %}checked{% endif %}
+                                                   class="w-5 h-5 text-blue-600"
+                                                   onchange="toggleEmailField()">
+                                            <div>
+                                                <span class="font-medium text-gray-700">Nhập email</span>
+                                                <p class="text-xs text-gray-500">Chỉ người dùng có email này mới được sử dụng</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- Email cụ thể -->
+                                <div id="email_container" class="{% if voucher.usage_type != 'specific' %}opacity-50{% endif %}">
+                                    <label class="block text-gray-700 mb-2">Email người dùng</label>
+                                    <input type="email" name="specific_email" id="specific_email"
+                                           value="{{ voucher.specific_email|default:'' }}"
+                                           placeholder="Ví dụ: ngocKhanh@gmail.com"
+                                           class="admin-input {% if voucher.usage_type != 'specific' %}pointer-events-none{% endif %}"
+                                           {% if voucher.usage_type != 'specific' %}disabled{% endif %}>
+                                    <p class="text-xs text-gray-500 mt-1">Nhập email chính xác của người dùng được áp dụng voucher này</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- THỜI HẠN & TRẠNG THÁI -->
+                        <div class="bg-purple-50 rounded-lg p-4 mb-4">
+                            <h3 class="text-purple-800 font-semibold mb-3 flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Thời hạn & Trạng thái
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Vô thời hạn -->
+                                <div>
+                                    <label class="block text-gray-700 mb-2">Thời hạn sử dụng</label>
+                                    <div class="flex items-center gap-3 mt-2 p-3 bg-white rounded-lg border border-gray-200">
+                                        <input type="checkbox" name="is_indefinite" id="is_indefinite"
+                                               {% if not voucher.expires_at %}checked{% endif %}
+                                               class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                               onchange="toggleExpiryDate()">
+                                        <label for="is_indefinite" class="text-gray-700 cursor-pointer">
+                                            <span class="font-medium">Vô thời hạn</span>
+                                            <p class="text-xs text-gray-500 mt-0.5">Voucher không có thời hạn sử dụng</p>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- Ngày hết hạn -->
+                                <div id="expiry_date_container" class="{% if not voucher.expires_at %}opacity-50{% endif %}">
+                                    <label class="block text-gray-700 mb-2">Ngày hết hạn</label>
+                                    <input type="datetime-local" name="expires_at" id="expires_at"
+                                           value="{% if voucher.expires_at %}{{ voucher.expires_at|date:'Y-m-d H:i' }}{% endif %}"
+                                           class="admin-input {% if not voucher.expires_at %}pointer-events-none{% endif %}"
+                                           {% if not voucher.expires_at %}disabled{% endif %}>
+                                </div>
                             </div>
                             
-                            <!-- Trạng thái -->
-                            <div>
-                                <label class="block text-gray-700 mb-2">Trạng thái</label>
-                                <div class="flex items-center gap-2 mt-2">
+                            <!-- Trạng thái hoạt động -->
+                            <div class="mt-4">
+                                <div class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
                                     <input type="checkbox" name="is_active" id="is_active"
                                            {% if voucher.is_active or not voucher %}checked{% endif %}
-                                           class="w-4 h-4">
-                                    <label for="is_active" class="text-gray-700">Hoạt động</label>
+                                           class="w-5 h-5 text-green-600 rounded border-gray-300 focus:ring-green-500">
+                                    <label for="is_active" class="text-gray-700 cursor-pointer">
+                                        <span class="font-medium">Hoạt động</span>
+                                        <p class="text-xs text-gray-500 mt-0.5">Voucher có thể được sử dụng</p>
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -162,6 +311,122 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleDiscountOptions() {
+    const options = document.getElementById('discount_options');
+    options.classList.toggle('hidden');
+}
+
+function selectDiscountType(type) {
+    const label = document.getElementById('discount_type_label');
+    const percentInput = document.querySelector('input[name="discount_value_percent"]');
+    const fixedInput = document.querySelector('input[name="discount_value_fixed"]');
+    const percentContainer = document.getElementById('percent_input_container');
+    const fixedContainer = document.getElementById('fixed_input_container');
+    const hiddenInput = document.getElementById('discount_value');
+    
+    // Update label
+    if (type === 'percent') {
+        label.textContent = 'Phần trăm (%)';
+    } else {
+        label.textContent = 'Tiền cố định (đ)';
+    }
+    
+    // Toggle visibility and states
+    if (type === 'percent') {
+        percentContainer.classList.remove('opacity-50');
+        fixedContainer.classList.add('opacity-50');
+        
+        percentInput.disabled = false;
+        percentInput.classList.remove('pointer-events-none');
+        fixedInput.disabled = true;
+        fixedInput.classList.add('pointer-events-none');
+        
+        // Move value from fixed to percent if needed
+        if (fixedInput.value && !percentInput.value) {
+            percentInput.value = fixedInput.value;
+        }
+    } else {
+        percentContainer.classList.add('opacity-50');
+        fixedContainer.classList.remove('opacity-50');
+        
+        percentInput.disabled = true;
+        percentInput.classList.add('pointer-events-none');
+        fixedInput.disabled = false;
+        fixedInput.classList.remove('pointer-events-none');
+        
+        // Move value from percent to fixed if needed
+        if (percentInput.value && !fixedInput.value) {
+            fixedInput.value = percentInput.value;
+        }
+    }
+    
+    // Update hidden input
+    updateDiscountValue(type, type === 'percent' ? percentInput.value : fixedInput.value);
+    
+    // Hide dropdown
+    document.getElementById('discount_options').classList.add('hidden');
+}
+
+function updateDiscountValue(type, value) {
+    const hiddenInput = document.getElementById('discount_value');
+    hiddenInput.value = value || 0;
+}
+
+function toggleEmailField() {
+    const usageType = document.querySelector('input[name="usage_type"]:checked').value;
+    const emailInput = document.getElementById('specific_email');
+    const emailContainer = document.getElementById('email_container');
+    
+    if (usageType === 'specific') {
+        emailInput.disabled = false;
+        emailInput.classList.remove('pointer-events-none');
+        emailContainer.classList.remove('opacity-50');
+    } else {
+        emailInput.disabled = true;
+        emailInput.value = '';
+        emailInput.classList.add('pointer-events-none');
+        emailContainer.classList.add('opacity-50');
+    }
+}
+
+function toggleExpiryDate() {
+    const checkbox = document.getElementById('is_indefinite');
+    const dateInput = document.getElementById('expires_at');
+    const container = document.getElementById('expiry_date_container');
+    
+    if (checkbox.checked) {
+        dateInput.disabled = true;
+        dateInput.value = '';
+        dateInput.classList.add('pointer-events-none');
+        container.classList.add('opacity-50');
+    } else {
+        dateInput.disabled = false;
+        dateInput.classList.remove('pointer-events-none');
+        container.classList.remove('opacity-50');
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const options = document.getElementById('discount_options');
+    const button = event.target.closest('button[onclick="toggleDiscountOptions()"]');
+    
+    if (options && !options.contains(event.target) && !button) {
+        options.classList.add('hidden');
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Set initial hidden input value
+    const currentType = '{{ voucher.discount_type }}' || 'percent';
+    const currentValue = {{ voucher.discount_value|default:0 }};
+    document.getElementById('discount_value').value = currentValue;
+    
+    toggleEmailField();
+    toggleExpiryDate();
+});
+</script>
 {% endblock %}
-
-
