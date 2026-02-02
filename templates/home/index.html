@@ -229,7 +229,11 @@
     <div class="promo-section rounded-xl overflow-hidden">
         {% comment %} Banner khuyến mãi {% endcomment %}
         <div class="promo-banner">
+            {% if promotion and promotion.banner_image and promotion.banner_image.name and promotion.banner_image.name != 'banners/bnv.png' %}
+            <img src="{{ promotion.banner_image.url }}" alt="Khuyến mãi đặc biệt">
+            {% else %}
             <img src="{% static 'banners/bnv.png' %}" alt="Khuyến mãi đặc biệt">
+            {% endif %}
         </div>
         {% comment %} Danh sách sản phẩm khuyến mãi (Max 5 sản phẩm) {% endcomment %}
         <div class="promo-products">

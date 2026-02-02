@@ -59,6 +59,12 @@
                         👥 Quản lý người dùng
                     </a>
                     
+                    <!-- Quản lý khuyến mãi -->
+                    <a href="{% url 'admin_promotions' %}" 
+                       class="admin-sidebar-btn">
+                        🔥 Quản lý khuyến mãi
+                    </a>
+                    
                     <!-- Xem trang web -->
                     <a href="{% url 'home' %}" 
                        class="admin-sidebar-btn">
@@ -122,9 +128,9 @@
                                             </a>
                                             {% if not user.is_superuser %}
                                             <form method="POST" action="{% url 'admin_user_delete' user.id %}" 
-                                                  onsubmit="return confirm('Ban co chac muon xoa user nay?')">
+                                                  id="deleteUser{{ user.id }}">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn-delete">Xoa</button>
+                                                <button type="button" onclick="confirmDeleteUser('{{ user.id }}', '{{ user.username|escapejs }}')" class="btn-delete">Xoa</button>
                                             </form>
                                             {% endif %}
                                         </div>
@@ -175,4 +181,20 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/**
+ * Xác nhận xóa người dùng
+ */
+function confirmDeleteUser(userId, username) {
+    showConfirmDialog('Xác nhận xóa người dùng', `Bạn có chắc chắn muốn xóa người dùng "${username}" không?`, 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('deleteUser' + userId).submit();
+            }
+        });
+}
+</script>
 {% endblock %}

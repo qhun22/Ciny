@@ -13,7 +13,9 @@ from .models import (
     Coupon,
     ShippingAddress,
     Order,
-    OrderItem
+    OrderItem,
+    SpecialPromotion,
+    SpecialPromotionProduct
 )
 
 
@@ -121,5 +123,29 @@ class OrderAdmin(admin.ModelAdmin):
         """Đánh dấu đơn hàng thành công."""
         queryset.update(status='completed')
     mark_completed.short_description = 'Đánh dấu thành công'
+
+
+class SpecialPromotionProductInline(admin.TabularInline):
+    """Hiển thị sản phẩm khuyến mãi inline."""
+    model = SpecialPromotionProduct
+    extra = 0
+    fields = ['product', 'discount_percent', 'display_order']
+    readonly_fields = ['created_at']
+
+
+@admin.register(SpecialPromotion)
+class SpecialPromotionAdmin(admin.ModelAdmin):
+    """Admin cho model SpecialPromotion."""
+    list_display = ['__str__', 'is_active', 'created_at', 'updated_at']
+    list_filter = ['is_active']
+    inlines = [SpecialPromotionProductInline]
+    
+    def has_add_permission(self, request):
+        """Chỉ cho phép tạo 1 promotion instance."""
+        return SpecialPromotion.objects.count() == 0
+    
+    def has_delete_permission(self, request, obj=None):
+        """Không cho phép xóa promotion."""
+        return False
 
 

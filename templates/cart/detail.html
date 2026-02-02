@@ -40,7 +40,6 @@
                                     <th class="px-4 py-3 text-center">Đơn giá</th>
                                     <th class="px-4 py-3 text-center w-32">Số lượng</th>
                                     <th class="px-4 py-3 text-right w-28">Thành tiền</th>
-                                    <th class="px-4 py-3 text-center w-16">Xóa</th>
                                 </tr>
                             </thead>
                             <tbody id="cartItems">
@@ -87,15 +86,6 @@
                                     </td>
                                     <td class="px-4 py-4 text-right">
                                         <span class="item-subtotal font-bold text-red-600">{{ item.subtotal|format_vnd }}</span>
-                                    </td>
-                                    <td class="px-4 py-4 text-center">
-                                        <button type="button" onclick="removeItem({{ item.id }})" 
-                                                class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
-                                        </button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -188,17 +178,6 @@
                 <div id="couponError" class="hidden mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm"></div>
                 {% endif %}
             </div>
-            
-            <!-- Hiển thị lỗi/thông báo -->
-            {% if messages %}
-            <div class="space-y-2">
-                {% for message in messages %}
-                <div class="p-3 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700 border border-red-200{% else %}bg-green-100 text-green-700 border border-green-200{% endif %}">
-                    {{ message }}
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
             
             <!-- Tổng tiền -->
             <div class="bg-white rounded-xl shadow-md p-6 sticky top-4">
@@ -608,81 +587,92 @@ function proceedToCheckout() {
 }
 
 function removeItem(itemId) {
-    if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
-        fetch(`/cart/remove/${itemId}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        }).then(response => response.json()).then(data => {
-            if (data.success) {
-                // Xóa dòng sản phẩm
-                const row = document.getElementById(`item_${itemId}`);
-                if (row) {
-                    row.remove();
-                }
-                
-                // Cập nhật số lượng sản phẩm còn lại
-                const remainingRows = document.querySelectorAll('.item-row');
-                
-                if (remainingRows.length === 0) {
-                    // Giỏ hàng trống - reload để hiện empty state
-                    location.reload();
-                } else {
-                    // Cập nhật subtotal và tính lại tổng
-                    document.getElementById('subtotalPrice').textContent = data.subtotal.toLocaleString('vi-VN') + 'đ';
-                    calculateTotal();
-                }
-                
-                // Cập nhật select all checkbox
-                updateSelectAllCheckbox();
-                toggleDeleteButton();
+    showConfirmDialog('Xác nhận xóa sản phẩm', 'Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng không?', 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/cart/remove/${itemId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).then(response => response.json()).then(data => {
+                    if (data.success) {
+                        // Xóa dòng sản phẩm
+                        const row = document.getElementById(`item_${itemId}`);
+                        if (row) {
+                            row.remove();
+                        }
+                        
+                        // Cập nhật số lượng sản phẩm còn lại
+                        const remainingRows = document.querySelectorAll('.item-row');
+                        
+                        if (remainingRows.length === 0) {
+                            // Giỏ hàng trống - reload để hiện empty state
+                            location.reload();
+                        } else {
+                            // Cập nhật subtotal và tính lại tổng
+                            document.getElementById('subtotalPrice').textContent = data.subtotal.toLocaleString('vi-VN') + 'đ';
+                            calculateTotal();
+                        }
+                        
+                        // Cập nhật select all checkbox
+                        updateSelectAllCheckbox();
+                        toggleDeleteButton();
+                    }
+                });
             }
         });
-    }
 }
 
 function removeSelectedItems() {
     const checked = document.querySelectorAll('.item-checkbox:checked');
     if (checked.length === 0) {
-        alert('Vui lòng chọn sản phẩm cần xóa!');
+        Swal.fire({
+            title: 'Thông báo!',
+            text: 'Vui lòng chọn sản phẩm cần xóa!',
+            icon: 'info',
+            confirmButtonColor: '#2563eb'
+        });
         return;
     }
     
-    if (confirm(`Bạn có chắc muốn xóa ${checked.length} sản phẩm đã chọn?`)) {
-        // Xóa từng sản phẩm bằng AJAX
-        let deleted = 0;
-        const totalToDelete = checked.length;
-        
-        checked.forEach(cb => {
-            const itemId = cb.value;
-            fetch(`/cart/remove/${itemId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            }).then(response => response.json()).then(data => {
-                deleted++;
-                const row = document.getElementById(`item_${itemId}`);
-                if (row) row.remove();
+    showConfirmDialog('Xác nhận xóa sản phẩm', `Bạn có chắc muốn xóa ${checked.length} sản phẩm đã chọn không?`, 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                // Xóa từng sản phẩm bằng AJAX
+                let deleted = 0;
+                const totalToDelete = checked.length;
                 
-                if (deleted === totalToDelete) {
-                    // Kiểm tra giỏ hàng trống
-                    const remainingRows = document.querySelectorAll('.item-row');
-                    if (remainingRows.length === 0) {
-                        location.reload();
-                    } else {
-                        // Cập nhật UI
-                        updateSelectAllCheckbox();
-                        toggleDeleteButton();
-                        calculateTotal();
-                    }
-                }
-            });
+                checked.forEach(cb => {
+                    const itemId = cb.value;
+                    fetch(`/cart/remove/${itemId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }).then(response => response.json()).then(data => {
+                        deleted++;
+                        const row = document.getElementById(`item_${itemId}`);
+                        if (row) row.remove();
+                        
+                        if (deleted === totalToDelete) {
+                            // Kiểm tra giỏ hàng trống
+                            const remainingRows = document.querySelectorAll('.item-row');
+                            if (remainingRows.length === 0) {
+                                location.reload();
+                            } else {
+                                // Cập nhật UI
+                                updateSelectAllCheckbox();
+                                toggleDeleteButton();
+                                calculateTotal();
+                            }
+                        }
+                    });
+                });
+            }
         });
-    }
 }
 
 function getCookie(name) {

@@ -233,16 +233,35 @@
     
     <script src="{% static 'js/scripts.js' %}"></script>
     
+    <!-- SweetAlert2 for beautiful confirmation dialogs -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     {% block extra_js %}{% endblock %}
     
     {% if messages %}
-    <div class="fixed bottom-4 right-4 z-50 space-y-2">
+    <div id="systemMessages" class="fixed bottom-4 right-4 z-50 space-y-2">
         {% for message in messages %}
-        <div class="px-6 py-3 rounded-lg shadow-lg {% if message.tags == 'success' %}bg-green-500 text-white{% elif message.tags == 'error' %}bg-red-500 text-white{% elif message.tags == 'warning' %}bg-yellow-500 text-black{% else %}bg-blue-500 text-white{% endif %}">
+        <div class="px-6 py-3 rounded-lg shadow-lg transition-all duration-300 transform translate-y-0 opacity-100 {% if message.tags == 'success' %}bg-green-500 text-white{% elif message.tags == 'error' %}bg-red-500 text-white{% elif message.tags == 'warning' %}bg-yellow-500 text-black{% else %}bg-blue-500 text-white{% endif %}">
             {{ message }}
         </div>
         {% endfor %}
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const messages = document.querySelectorAll('#systemMessages > div');
+            if (messages.length > 0) {
+                messages.forEach((msg, index) => {
+                    setTimeout(() => {
+                        msg.style.opacity = '0';
+                        msg.style.transform = 'translateY(20px)';
+                        setTimeout(() => {
+                            msg.remove();
+                        }, 300);
+                    }, 3000 + (index * 500));
+                });
+            }
+        });
+    </script>
     {% endif %}
     
 </body>

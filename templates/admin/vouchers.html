@@ -60,6 +60,12 @@
                         👥 Quản lý người dùng
                     </a>
                     
+                    <!-- Quản lý khuyến mãi -->
+                    <a href="{% url 'admin_promotions' %}" 
+                       class="admin-sidebar-btn">
+                        🔥 Quản lý khuyến mãi
+                    </a>
+                    
                     <!-- Xem trang web -->
                     <a href="{% url 'home' %}" 
                        class="admin-sidebar-btn">
@@ -222,9 +228,9 @@
                                                 Sửa
                                             </a>
                                             <form method="POST" action="{% url 'admin_voucher_delete' voucher.id %}" 
-                                                  onsubmit="return confirm('Bạn có chắc muốn xóa voucher này?')">
+                                                  id="deleteVoucher{{ voucher.id }}">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn-delete">Xóa</button>
+                                                <button type="button" onclick="confirmDeleteVoucher('{{ voucher.id }}', '{{ voucher.code|escapejs }}')" class="btn-delete">Xóa</button>
                                             </form>
                                         </div>
                                     </td>
@@ -246,6 +252,22 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/**
+ * Xác nhận xóa voucher
+ */
+function confirmDeleteVoucher(voucherId, voucherCode) {
+    showConfirmDialog('Xác nhận xóa voucher', `Bạn có chắc chắn muốn xóa voucher "${voucherCode}" không?`, 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('deleteVoucher' + voucherId).submit();
+            }
+        });
+}
+</script>
 {% endblock %}
 
 

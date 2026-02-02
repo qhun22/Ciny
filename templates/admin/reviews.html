@@ -60,6 +60,12 @@
                         👥 Quản lý người dùng
                     </a>
                     
+                    <!-- Quản lý khuyến mãi -->
+                    <a href="{% url 'admin_promotions' %}" 
+                       class="admin-sidebar-btn">
+                        🔥 Quản lý khuyến mãi
+                    </a>
+                    
                     <!-- Xem trang web -->
                     <a href="{% url 'home' %}" 
                        class="admin-sidebar-btn">
@@ -98,10 +104,9 @@
                                     <td class="py-3 px-4 font-medium">#{{ review.id }}</td>
                                     <td class="py-3 px-4">
                                         <div>
-                                            <p class="font-medium">{{ review.get_display_name }}</p>
-                                            {% if not review.is_anonymous %}
+                                            <!-- Luôn hiển thị tên thực trong admin -->
+                                            <p class="font-medium">{{ review.user.username }}</p>
                                             <p class="text-sm text-gray-500">{{ review.user.email }}</p>
-                                            {% endif %}
                                         </div>
                                     </td>
                                     <td class="py-3 px-4">
@@ -135,9 +140,10 @@
                                     </td>
                                     <td class="py-3 px-4 text-center">
                                         <form method="POST" action="{% url 'admin_review_delete' review.id %}" 
-                                              onsubmit="return confirm('Xóa đánh giá này?');">
+                                              id="deleteReview{{ review.id }}">
                                             {% csrf_token %}
-                                            <button type="submit" 
+                                            <button type="button" 
+                                                    onclick="confirmDeleteReview('{{ review.id }}')"
                                                     class="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition"
                                                     title="Xóa">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,4 +197,20 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/**
+ * Xác nhận xóa đánh giá
+ */
+function confirmDeleteReview(reviewId) {
+    showConfirmDialog('Xác nhận xóa đánh giá', 'Bạn có chắc chắn muốn xóa đánh giá này không?', 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('deleteReview' + reviewId).submit();
+            }
+        });
+}
+</script>
 {% endblock %}

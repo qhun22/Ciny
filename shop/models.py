@@ -695,3 +695,140 @@ class Feedback(models.Model):
         """Kiểm tra đã được phản hồi chưa."""
         return bool(self.admin_response)
 
+
+class Promotion(models.Model):
+    """
+    Model cho cấu hình khuyến mãi đặc biệt trên trang chủ.
+    """
+    is_active = models.BooleanField(default=False, verbose_name="Bật/Tắt hiển thị")
+    banner_image = models.ImageField(
+        upload_to='banners/',
+        default='banners/bnv.png',
+        verbose_name="Ảnh banner"
+    )
+    max_products = models.PositiveIntegerField(
+        default=5,
+        verbose_name="Số sản phẩm tối đa hiển thị"
+    )
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Ngày cập nhật")
+    
+    class Meta:
+        verbose_name = "Cấu hình khuyến mãi"
+        verbose_name_plural = "Cấu hình khuyến mãi"
+    
+    def __str__(self):
+        return f"Khuyến mãi đặc biệt ({'Bật' if self.is_active else 'Tắt'})"
+    
+    @property
+    def products_count(self):
+        """Đếm số sản phẩm trong khuyến mãi."""
+        return self.promotion_products.count()
+
+
+class PromotionProduct(models.Model):
+    """
+    Model cho sản phẩm trong khuyến mãi đặc biệt.
+    """
+    promotion = models.ForeignKey(
+        Promotion,
+        on_delete=models.CASCADE,
+        related_name='promotion_products',
+        verbose_name="Khuyến mãi"
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='promotion_items',
+        verbose_name="Sản phẩm"
+    )
+    discount_percent = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Phần trăm giảm giá (%)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ngày thêm")
+    
+    class Meta:
+        verbose_name = "Sản phẩm khuyến mãi"
+        verbose_name_plural = "Sản phẩm khuyến mãi"
+        ordering = ['created_at']
+    
+    def __str__(self):
+        return f"{self.product.name} - Giảm {self.discount_percent}%"
+    
+    @property
+    def discounted_price(self):
+        """Tính giá sau khi giảm."""
+        if self.discount_percent > 0:
+            return int(self.product.sale_price * (100 - self.discount_percent) / 100)
+        return self.product.sale_price
+
+
+class SpecialPromotion(models.Model):
+    """
+    Model cho khuyến mãi đặc biệt hiển thị trên trang chủ.
+    Admin có thể bật/tắt và chọn sản phẩm khuyến mãi.
+    """
+    is_active = models.BooleanField(default=True, verbose_name="Hiển thị khuyến mãi")
+    products = models.ManyToManyField(
+        Product,
+        through='SpecialPromotionProduct',
+        related_name='special_promotions',
+        verbose_name="Sản phẩm khuyến mãi"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ngày tạo")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Ngày cập nhật")
+    
+    class Meta:
+        verbose_name = "Khuyến mãi đặc biệt"
+        verbose_name_plural = "Khuyến mãi đặc biệt"
+    
+    def __str__(self):
+        return f"Khuyến mãi đặc biệt - {'Bật' if self.is_active else 'Tắt'}"
+    
+    @classmethod
+    def get_promotions(cls):
+        """Lấy hoặc tạo promotion instance duy nhất."""
+        obj, created = cls.objects.get_or_create(id=1)
+        return obj
+
+
+class SpecialPromotionProduct(models.Model):
+    """
+    Model trung gian cho sản phẩm trong khuyến mãi đặc biệt.
+    Lưu thứ tự hiển thị.
+    """
+    promotion = models.ForeignKey(
+        SpecialPromotion,
+        on_delete=models.CASCADE,
+        verbose_name="Khuyến mãi"
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        verbose_name="Sản phẩm"
+    )
+    discount_percent = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Phần trăm giảm giá"
+    )
+    display_order = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Thứ tự hiển thị"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ngày thêm")
+    
+    class Meta:
+        verbose_name = "Sản phẩm khuyến mãi"
+        verbose_name_plural = "Sản phẩm khuyến mãi"
+        ordering = ['display_order']
+    
+    def __str__(self):
+        return f"{self.product.name} - Giảm {self.discount_percent}%"
+    
+    @property
+    def discounted_price(self):
+        """Tính giá sau giảm."""
+        if self.discount_percent > 0:
+            return int(self.product.original_price * (100 - self.discount_percent) / 100)
+        return self.product.sale_price
+

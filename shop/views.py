@@ -15,7 +15,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
-from .models import Product, Review, Coupon, ProductImage, StorageOption, ColorOption, Cart, CartItem, ShippingAddress, Order, OrderItem, UserProfile, UserVoucher, Feedback
+from .models import Product, Review, Coupon, ProductImage, StorageOption, ColorOption, Cart, CartItem, ShippingAddress, Order, OrderItem, UserProfile, UserVoucher, Feedback, Promotion, PromotionProduct
 from .forms import RegistrationForm, ReviewForm, CouponForm
 
 
@@ -27,28 +27,37 @@ def home(request):
     # Lấy tối đa 15 sản phẩm, sắp xếp theo ngày tạo mới nhất
     products = Product.objects.all().order_by('-created_at')[:15]
 
-    # Lấy sản phẩm khuyến mãi đặc biệt (có giảm giá)
+    # Lấy sản phẩm khuyến mãi đặc biệt từ Promotion model
     special_promotions = []
     show_promotion = False
-
-    # Lấy tối đa 5 sản phẩm có discount_percent > 0
-    promoted_products = Product.objects.filter(discount_percent__gt=0).order_by('-discount_percent')[:5]
-
-    if promoted_products.exists():
+    
+    # Lấy hoặc tạo promotion config
+    promotion, created = Promotion.objects.get_or_create(id=1)
+    
+    if promotion.is_active:
         show_promotion = True
-        for product in promoted_products:
-            # Tính giá sau giảm
-            discounted_price = int(product.original_price * (100 - product.discount_percent) / 100)
+        max_products = promotion.max_products or 5
+        # Lấy sản phẩm từ PromotionProduct
+        promo_products = promotion.promotion_products.select_related('product')[:max_products]
+        for promo_product in promo_products:
+            product = promo_product.product
+            # Tính phần trăm giảm giá từ giá gốc và giá bán
+            if product.original_price > 0 and product.sale_price < product.original_price:
+                discount_percent = int((product.original_price - product.sale_price) / product.original_price * 100)
+            else:
+                discount_percent = int(product.discount_percent) if product.discount_percent else 0
+            
             special_promotions.append({
                 'product': product,
-                'discount_percent': int(product.discount_percent),
-                'discounted_price': discounted_price,
+                'discount_percent': discount_percent,
+                'discounted_price': product.sale_price,
             })
 
     context = {
         'products': products,
         'show_promotion': show_promotion,
         'special_promotions': special_promotions,
+        'promotion': promotion,
         'page_title': 'Trang chủ - Cửa hàng điện thoại',
     }
 
@@ -298,7 +307,7 @@ def register_view(request):
             from django.contrib.auth import login
             login(request, user)
 
-            messages.success(request, 'Đăng ký tài khoản thành công! Xin chào, {}!'.format(user.first_name))
+            messages.success(request, 'Đăng ký tài khoản thành công. Xin chào, {}!'.format(user.first_name))
             return redirect('home')
     else:
         form = RegistrationForm()
@@ -1416,6 +1425,13 @@ def checkout_place_order(request):
         note=note,
     )
     
+    # Gửi thông báo Telegram
+    try:
+        from core.telegram_utils import send_order_notification
+        send_order_notification(order)
+    except Exception as e:
+        print(f"Failed to send Telegram notification: {e}")
+    
     # Tạo các sản phẩm trong đơn hàng
     for item in cart_items:
         OrderItem.objects.create(
@@ -1826,6 +1842,7 @@ def admin_order_detail(request, order_id):
     if request.method == 'POST':
         new_status = request.POST.get('status')
         if new_status:
+            old_status = order.status  # Lưu trạng thái cũ
             order.status = new_status
             # Tự động cập nhật trạng thái thanh toán khi đơn hàng hoàn thành
             if new_status == 'completed':
@@ -1834,6 +1851,15 @@ def admin_order_detail(request, order_id):
                     order.payment_status = 'paid'
                 # Nếu là thanh toán online, giữ nguyên
             order.save()
+            
+            # Gửi thông báo Telegram khi trạng thái thay đổi
+            if old_status != new_status:
+                try:
+                    from core.telegram_utils import send_order_status_notification
+                    send_order_status_notification(order, old_status)
+                except Exception as e:
+                    print(f"Failed to send Telegram notification: {e}")
+            
             messages.success(request, 'Cập nhật trạng thái đơn hàng thành công!')
             return redirect('admin_order_detail', order_id=order_id)
     
@@ -2160,4 +2186,176 @@ def admin_review_delete(request, review_id):
     messages.success(request, f'Đã xóa đánh giá của {user_username} cho sản phẩm {product_name}')
     
     return redirect('admin_reviews')
+
+
+# ========== PROMOTION MANAGEMENT ==========
+
+@user_passes_test(is_admin)
+def admin_promotions(request):
+    """
+    Trang quản lý khuyến mãi đặc biệt (admin).
+    """
+    # Lấy hoặc tạo promotion config
+    promotion, created = Promotion.objects.get_or_create(id=1)
+    
+    # Lấy danh sách sản phẩm khuyến mãi
+    promo_products = promotion.promotion_products.select_related('product').all()
+    
+    context = {
+        'promotion': promotion,
+        'promo_products': promo_products,
+        'page_title': 'Quản lý khuyến mãi - Admin',
+    }
+    
+    return render(request, 'admin/promotions.html', context)
+
+
+@user_passes_test(is_admin)
+@require_POST
+def admin_promotion_toggle(request):
+    """
+    Bật/tắt hiển thị khuyến mãi (admin).
+    """
+    promotion, created = Promotion.objects.get_or_create(id=1)
+    promotion.is_active = not promotion.is_active
+    promotion.save()
+    
+    status = 'Bật' if promotion.is_active else 'Tắt'
+    messages.success(request, f'Đã {status} hiển thị khuyến mãi!')
+    
+    return redirect('admin_promotions')
+
+
+@user_passes_test(is_admin)
+def admin_promotion_products(request):
+    """
+    API - Lấy danh sách sản phẩm khuyến mãi (dùng cho modal).
+    """
+    promotion, created = Promotion.objects.get_or_create(id=1)
+    promo_products = promotion.promotion_products.select_related('product').all()
+    
+    data = [{
+        'id': pp.id,
+        'product_id': pp.product.id,
+        'product_name': pp.product.name,
+        'brand': pp.product.brand,
+        'discount_percent': pp.discount_percent,
+        'discounted_price': pp.discounted_price,
+    } for pp in promo_products]
+    
+    return JsonResponse({'products': data})
+
+
+@user_passes_test(is_admin)
+def admin_products_by_brand(request):
+    """
+    API - Lấy danh sách sản phẩm theo hãng.
+    """
+    brand = request.GET.get('brand', '').strip()
+    
+    if brand:
+        products = Product.objects.filter(brand__iexact=brand).values('id', 'name', 'brand', 'sale_price')
+    else:
+        products = Product.objects.values('id', 'name', 'brand', 'sale_price')
+    
+    data = list(products)
+    return JsonResponse({'products': data})
+
+
+@user_passes_test(is_admin)
+@require_POST
+def admin_promotion_product_add(request):
+    """
+    Thêm sản phẩm vào khuyến mãi (admin).
+    Hỗ trợ thêm nhiều sản phẩm cùng lúc.
+    """
+    import json
+    
+    promotion, created = Promotion.objects.get_or_create(id=1)
+    
+    product_ids_json = request.POST.get('product_ids', '[]')
+    
+    try:
+        product_ids = json.loads(product_ids_json)
+    except json.JSONDecodeError:
+        product_ids = []
+    
+    if not product_ids:
+        messages.error(request, 'Vui lòng chọn ít nhất một sản phẩm!')
+        return redirect('admin_promotions')
+    
+    added_count = 0
+    for product_id in product_ids:
+        product = get_object_or_404(Product, id=product_id)
+        
+        # Kiểm tra sản phẩm đã có trong khuyến mãi chưa
+        existing = promotion.promotion_products.filter(product_id=product_id).first()
+        if not existing:
+            # Thêm mới (discount_percent mặc định = 0)
+            PromotionProduct.objects.create(
+                promotion=promotion,
+                product=product,
+                discount_percent=0
+            )
+            added_count += 1
+    
+    if added_count > 0:
+        messages.success(request, f'Đã thêm {added_count} sản phẩm vào khuyến mãi!')
+    else:
+        messages.info(request, 'Các sản phẩm đã chọn đã có trong khuyến mãi!')
+    
+    return redirect('admin_promotions')
+
+
+@user_passes_test(is_admin)
+@require_POST
+def admin_promotion_product_delete(request, product_id):
+    """
+    Xóa sản phẩm khỏi khuyến mãi (admin).
+    """
+    promotion, created = Promotion.objects.get_or_create(id=1)
+    promo_product = get_object_or_404(PromotionProduct, promotion=promotion, product_id=product_id)
+    
+    product_name = promo_product.product.name
+    promo_product.delete()
+    
+    messages.success(request, f'Đã xóa {product_name} khỏi khuyến mãi!')
+    
+    return redirect('admin_promotions')
+
+
+@user_passes_test(is_admin)
+@require_POST
+def admin_promotion_product_update(request, product_id):
+    """
+    Cập nhật phần trăm giảm giá cho sản phẩm khuyến mãi (admin).
+    """
+    promotion, created = Promotion.objects.get_or_create(id=1)
+    promo_product = get_object_or_404(PromotionProduct, promotion=promotion, product_id=product_id)
+    
+    discount_percent = int(request.POST.get('discount_percent', 0))
+    promo_product.discount_percent = discount_percent
+    promo_product.save()
+    
+    messages.success(request, f'Đã cập nhật giảm giá cho {promo_product.product.name} thành {discount_percent}%')
+    
+    return redirect('admin_promotions')
+
+
+@user_passes_test(is_admin)
+@require_POST
+def admin_promotion_banner_upload(request):
+    """
+    Upload ảnh banner khuyến mãi (admin).
+    """
+    promotion, created = Promotion.objects.get_or_create(id=1)
+    
+    if 'banner_image' in request.FILES:
+        promotion.banner_image = request.FILES['banner_image']
+        promotion.save()
+        messages.success(request, 'Đã cập nhật ảnh banner khuyến mãi!')
+    else:
+        messages.error(request, 'Vui lòng chọn ảnh để tải lên!')
+    
+    return redirect('admin_promotions')
 

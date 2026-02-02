@@ -1,0 +1,474 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-max-width">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Left Sidebar -->
+            <div class="admin-sidebar">
+                <div class="admin-sidebar-card">
+                    <h2 class="admin-sidebar-title">Quản trị</h2>
+                    
+                    <!-- Bảng điều khiển -->
+                    <a href="{% url 'admin_dashboard' %}" 
+                       class="admin-sidebar-btn">
+                        Bảng điều khiển
+                    </a>
+                    
+                    <!-- Quản lý sản phẩm -->
+                    <a href="{% url 'admin_product_list' %}" 
+                       class="admin-sidebar-btn">
+                        📦 Quản lý sản phẩm
+                    </a>
+                    
+                    <!-- Quản lý đơn hàng -->
+                    <a href="{% url 'admin_orders' %}" 
+                       class="admin-sidebar-btn">
+                        🛒 Quản lý đơn hàng
+                    </a>
+                    
+                    <!-- Quản lý mã giảm giá -->
+                    <a href="{% url 'admin_vouchers' %}" 
+                       class="admin-sidebar-btn">
+                        🎫 Quản lý voucher
+                    </a>
+                    
+                    <!-- Quản lý góp ý -->
+                    <a href="{% url 'admin_feedbacks' %}" 
+                       class="admin-sidebar-btn">
+                        💬 Quản lý góp ý
+                    </a>
+                    
+                    <!-- Quản lý đánh giá -->
+                    <a href="{% url 'admin_reviews' %}" 
+                       class="admin-sidebar-btn">
+                        ⭐ Quản lý đánh giá
+                    </a>
+                    
+                    <!-- Quản lý người dùng -->
+                    <a href="{% url 'admin_users' %}" 
+                       class="admin-sidebar-btn">
+                        👥 Quản lý người dùng
+                    </a>
+                    
+                    <!-- Quản lý khuyến mãi -->
+                    <a href="{% url 'admin_promotions' %}" 
+                       class="admin-sidebar-btn active">
+                        🔥 Quản lý khuyến mãi
+                    </a>
+                    
+                    <!-- Xem trang web -->
+                    <a href="{% url 'home' %}" 
+                       class="admin-sidebar-btn">
+                        🌐 Xem trang web
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Content -->
+            <div class="admin-content">
+                <!-- Header -->
+                <div class="admin-header">
+                    <h1 class="admin-title">🔥 Quản lý khuyến mãi đặc biệt</h1>
+                    <p class="admin-subtitle">Bật/tắt và quản lý sản phẩm khuyến mãi trên trang chủ</p>
+                </div>
+
+                <!-- Promotion Config -->
+                <div class="admin-card">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div>
+                            <h2 class="text-lg font-semibold">Cấu hình hiển thị</h2>
+                            <p class="text-sm text-gray-500">Bật/tắt khối khuyến mãi trên trang chủ</p>
+                        </div>
+                        <form method="POST" action="{% url 'admin_promotion_toggle' %}">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    class="px-4 py-2 rounded-lg font-medium transition-colors
+                                           {% if promotion.is_active %}
+                                           bg-red-100 text-red-700 hover:bg-red-200
+                                           {% else %}
+                                           bg-green-100 text-green-700 hover:bg-green-200
+                                           {% endif %}">
+                                {% if promotion.is_active %}
+                                🔴 Tắt khuyến mãi
+                                {% else %}
+                                🟢 Bật khuyến mãi
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Banner Preview -->
+                    {% load static %}
+                    <div class="border rounded-lg overflow-hidden mb-4 relative group bg-gradient-to-r from-purple-600 to-pink-500">
+                        {% with banner=promotion.banner_image %}
+                        {% if banner and banner.name and banner.name != 'banners/bnv.png' %}
+                        <img src="{{ banner.url }}" alt="Banner khuyến mãi" 
+                             class="w-full h-32 object-cover">
+                        {% else %}
+                        <img src="{% static 'banners/bnv.png' %}" alt="Banner khuyến mãi" 
+                             class="w-full h-32 object-cover">
+                        {% endif %}
+                        {% endwith %}
+                        
+                        <!-- Nút đổi banner - hiện khi hover -->
+                        <label for="bannerUpload" 
+                               class="absolute inset-0 bg-black bg-opacity-50 group-hover:bg-opacity-60 flex items-center justify-center transition-all cursor-pointer opacity-0 group-hover:opacity-100">
+                            <span class="text-gray-800 font-semibold px-6 py-3 bg-white rounded-lg shadow-lg hover:bg-gray-100 transition flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                📷 Tải lên banner mới
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <!-- Form upload banner ẩn -->
+                    <form id="bannerForm" method="POST" action="{% url 'admin_promotion_banner_upload' %}" 
+                          enctype="multipart/form-data" class="hidden">
+                        {% csrf_token %}
+                        <input type="file" id="bannerUpload" name="banner_image" 
+                               accept="image/*" onchange="this.form.submit()">
+                    </form>
+                    
+                    <!-- Status Badge -->
+                    <div class="flex items-center gap-2">
+                        {% if promotion.is_active %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            ✅ Đang hiển thị trên trang chủ
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                            ❌ Đã tắt - Không hiển thị
+                        </span>
+                        {% endif %}
+                        <span class="text-sm text-gray-500">
+                            ({{ promo_products.count|default:0 }}/{{ promotion.max_products }} sản phẩm)
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Products List -->
+                <div class="admin-card">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div>
+                            <h2 class="text-lg font-semibold">Danh sách sản phẩm khuyến mãi</h2>
+                            <p class="text-sm text-gray-500">Các sản phẩm đang được hiển thị trong khối khuyến mãi</p>
+                        </div>
+                        <button type="button" 
+                                onclick="openAddProductModal()"
+                                class="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition-colors">
+                            ➕ Thêm sản phẩm
+                        </button>
+                    </div>
+
+                    {% if promo_products %}
+                    <div class="overflow-x-auto">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th class="py-3 px-4 text-left">ID</th>
+                                    <th class="py-3 px-4 text-left">Sản phẩm</th>
+                                    <th class="py-3 px-4 text-left">Hãng</th>
+                                    <th class="py-3 px-4 text-left">Giá bán</th>
+                                    <th class="py-3 px-4 text-center">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pp in promo_products %}
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="py-3 px-4 font-medium">#{{ pp.product.id }}</td>
+                                    <td class="py-3 px-4">
+                                        <div class="flex items-center gap-3">
+                                            {% if pp.product.main_image %}
+                                            <img src="{{ pp.product.main_image.url }}" 
+                                                 alt="{{ pp.product.name }}"
+                                                 class="w-12 h-12 object-cover rounded-lg">
+                                            {% endif %}
+                                            <span class="font-medium">{{ pp.product.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-1 bg-gray-100 rounded text-sm">
+                                            {{ pp.product.brand }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 font-medium text-primary">
+                                        <span class="price-format">{{ pp.product.sale_price|format_vnd }}</span>
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        <form method="POST" 
+                                              action="{% url 'admin_promotion_product_delete' pp.product.id %}"
+                                              id="deletePromotionProduct{{ pp.product.id }}">
+                                            {% csrf_token %}
+                                            <button type="button" 
+                                                    onclick="confirmDeletePromotionProduct('{{ pp.product.id }}', '{{ pp.product.name|escapejs }}')"
+                                                    class="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition"
+                                                    title="Xóa khỏi khuyến mãi">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <p class="text-gray-500">Chưa có sản phẩm nào trong khuyến mãi.</p>
+                        <p class="text-sm text-gray-400 mt-2">Nhấn nút "Thêm sản phẩm" để bắt đầu</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm sản phẩm -->
+<div id="addProductModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-4 border-b">
+                <h3 class="text-lg font-semibold">Thêm sản phẩm vào khuyến mãi</h3>
+                <button onclick="closeAddProductModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-4 overflow-y-auto max-h-[60vh]">
+                <form id="addProductForm" method="POST" action="{% url 'admin_promotion_product_add' %}">
+                    {% csrf_token %}
+                    
+                    <!-- Chọn hãng -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Chọn hãng điện thoại</label>
+                        <select id="brandSelect" onchange="loadProductsByBrand()" 
+                                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">-- Chọn hãng --</option>
+                            <option value="Apple">Apple</option>
+                            <option value="Samsung">Samsung</option>
+                            <option value="Xiaomi">Xiaomi</option>
+                            <option value="OPPO">OPPO</option>
+                            <option value="vivo">vivo</option>
+                            <option value="Realme">Realme</option>
+                            <option value="Tecno">Tecno</option>
+                            <option value="Honor">Honor</option>
+                            <option value="Nubia">Nubia</option>
+                            <option value="RedMagic">RedMagic</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Danh sách sản phẩm -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Chọn sản phẩm 
+                            <span class="text-gray-400 font-normal">(có thể chọn nhiều)</span>
+                        </label>
+                        <div id="productsList" class="border rounded-lg max-h-64 overflow-y-auto">
+                            <p class="text-gray-500 text-center py-8">Vui lòng chọn hãng trước</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Hidden inputs for product_ids -->
+                    <input type="hidden" id="selectedProductIds" name="product_ids" value="">
+                </form>
+            </div>
+            
+            <!-- Footer -->
+            <div class="flex items-center justify-between p-4 border-t bg-gray-50">
+                <button onclick="selectAllProducts()" 
+                        id="selectAllBtn"
+                        class="px-4 py-2 text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                        style="display: none;">
+                    Chọn tất cả
+                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="closeAddProductModal()" 
+                            class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+                        Hủy
+                    </button>
+                    <button onclick="submitAddProductForm()" 
+                            class="px-4 py-2 text-white rounded-lg hover:bg-purple-700 transition"
+                            style="background-color: #9333ea;">
+                        Lưu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Danh sách hãng điện thoại
+const brands = ['Apple', 'Samsung', 'Xiaomi', 'OPPO', 'vivo', 'Realme', 'Tecno', 'Honor', 'Nubia', 'RedMagic'];
+let currentBrandProducts = [];
+
+function openAddProductModal() {
+    document.getElementById('addProductModal').classList.remove('hidden');
+}
+
+function closeAddProductModal() {
+    document.getElementById('addProductModal').classList.add('hidden');
+    // Reset form
+    document.getElementById('brandSelect').value = '';
+    document.getElementById('productsList').innerHTML = '<p class="text-gray-500 text-center py-8">Vui lòng chọn hãng trước</p>';
+    document.getElementById('selectedProductIds').value = '';
+    document.getElementById('selectAllBtn').style.display = 'none';
+    currentBrandProducts = [];
+}
+
+function loadProductsByBrand() {
+    const brand = document.getElementById('brandSelect').value;
+    const productsList = document.getElementById('productsList');
+    
+    if (!brand) {
+        productsList.innerHTML = '<p class="text-gray-500 text-center py-8">Vui lòng chọn hãng trước</p>';
+        document.getElementById('selectAllBtn').style.display = 'none';
+        currentBrandProducts = [];
+        return;
+    }
+    
+    // Hiển thị loading
+    productsList.innerHTML = '<p class="text-gray-500 text-center py-8">Đang tải...</p>';
+    
+    // Gọi API lấy sản phẩm theo hãng
+    fetch(`/qhun22/promotions/products/by-brand/?brand=${encodeURIComponent(brand)}`)
+        .then(response => response.json())
+        .then(data => {
+            currentBrandProducts = data.products;
+            
+            if (data.products.length === 0) {
+                productsList.innerHTML = '<p class="text-gray-500 text-center py-8">Không có sản phẩm nào trong hãng này</p>';
+                document.getElementById('selectAllBtn').style.display = 'none';
+                return;
+            }
+            
+            // Hiện nút "Chọn tất cả"
+            document.getElementById('selectAllBtn').style.display = 'block';
+            
+            let html = '';
+            data.products.forEach(product => {
+                // Format giá
+                const salePrice = product.sale_price.toLocaleString('vi-VN') + 'đ';
+                html += `
+                    <label class="product-item flex items-center gap-3 p-3 hover:bg-purple-50 cursor-pointer border-b"
+                           onclick="toggleProductSelection(${product.id}, this)">
+                        <input type="checkbox" 
+                               class="product-checkbox w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                               data-product-id="${product.id}">
+                        <div class="flex-1">
+                            <p class="font-medium">${product.name}</p>
+                            <p class="text-sm text-gray-500">${salePrice}</p>
+                        </div>
+                    </label>
+                `;
+            });
+            productsList.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            productsList.innerHTML = '<p class="text-gray-500 text-center py-8">Lỗi khi tải sản phẩm</p>';
+        });
+}
+
+function toggleProductSelection(productId, element) {
+    const checkbox = element.querySelector('.product-checkbox');
+    checkbox.checked = !checkbox.checked;
+    
+    if (checkbox.checked) {
+        element.classList.add('bg-purple-100', 'border-purple-500');
+    } else {
+        element.classList.remove('bg-purple-100', 'border-purple-500');
+    }
+    
+    updateHiddenInput();
+}
+
+function selectAllProducts() {
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+        const item = cb.closest('.product-item');
+        if (cb.checked) {
+            item.classList.add('bg-purple-100', 'border-purple-500');
+        } else {
+            item.classList.remove('bg-purple-100', 'border-purple-500');
+        }
+    });
+    
+    updateHiddenInput();
+}
+
+function updateHiddenInput() {
+    const selectedIds = [];
+    document.querySelectorAll('.product-checkbox:checked').forEach(cb => {
+        selectedIds.push(parseInt(cb.dataset.productId));
+    });
+    document.getElementById('selectedProductIds').value = JSON.stringify(selectedIds);
+}
+
+function submitAddProductForm() {
+    const selectedIds = document.getElementById('selectedProductIds').value;
+    if (!selectedIds || selectedIds === '[]') {
+        alert('Vui lòng chọn ít nhất một sản phẩm!');
+        return;
+    }
+    
+    document.getElementById('addProductForm').submit();
+}
+
+// Đóng modal khi click outside
+document.getElementById('addProductModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeAddProductModal();
+    }
+});
+
+// Keyboard events
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAddProductModal();
+    }
+});
+
+/**
+ * Xác nhận xóa sản phẩm khỏi khuyến mãi
+ */
+function confirmDeletePromotionProduct(productId, productName) {
+    showConfirmDialog('Xác nhận xóa sản phẩm', `Bạn có chắc chắn muốn xóa sản phẩm "${productName}" khỏi khuyến mãi không?`, 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('deletePromotionProduct' + productId).submit();
+            }
+        });
+}
+</script>
+{% endblock %}
+

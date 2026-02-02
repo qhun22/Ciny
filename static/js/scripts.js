@@ -270,6 +270,27 @@ function formatCurrency(amount) {
     return amount.toLocaleString('vi-VN') + 'đ';
 }
 
+/**
+ * Hien thi dialog xac nhan dep bang SweetAlert2
+ * @param {string} title - Tieu de
+ * @param {string} text - Noi dung
+ * @param {string} type - Loai ('warning', 'error', 'success', 'info')
+ * @returns {Promise} - Promise tra ve khi nguoi dung chon
+ */
+function showConfirmDialog(title, text, type = 'warning') {
+    return Swal.fire({
+        title: title,
+        text: text,
+        icon: type,
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Xác nhận',
+        cancelButtonText: 'Hủy bỏ',
+        reverseButtons: true
+    });
+}
+
 // Initialize when page is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize gallery

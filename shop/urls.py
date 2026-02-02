@@ -121,5 +121,15 @@ urlpatterns = [
     path('qhun22/users/', views.admin_users, name='admin_users'),
     path('qhun22/users/<int:user_id>/', views.admin_user_detail, name='admin_user_detail'),
     path('qhun22/users/<int:user_id>/delete/', views.admin_user_delete, name='admin_user_delete'),
+    
+    # Admin - Quản lý khuyến mãi
+    path('qhun22/promotions/', views.admin_promotions, name='admin_promotions'),
+    path('qhun22/promotions/toggle/', views.admin_promotion_toggle, name='admin_promotion_toggle'),
+    path('qhun22/promotions/banner/upload/', views.admin_promotion_banner_upload, name='admin_promotion_banner_upload'),
+    path('qhun22/promotions/products/', views.admin_promotion_products, name='admin_promotion_products'),
+    path('qhun22/promotions/products/add/', views.admin_promotion_product_add, name='admin_promotion_product_add'),
+    path('qhun22/promotions/products/<int:product_id>/delete/', views.admin_promotion_product_delete, name='admin_promotion_product_delete'),
+    path('qhun22/promotions/products/<int:product_id>/update/', views.admin_promotion_product_update, name='admin_promotion_product_update'),
+    path('qhun22/promotions/products/by-brand/', views.admin_products_by_brand, name='admin_products_by_brand'),
 ]
 

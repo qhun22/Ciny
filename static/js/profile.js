@@ -45,14 +45,23 @@ function selectAddress(addressId) {
 function deleteSelectedAddress() {
     const selectedRadio = document.querySelector('input[name="default_address"]:checked');
     if (!selectedRadio) {
-        alert('Vui lòng chọn một địa chỉ để xóa!');
+        Swal.fire({
+            title: 'Lỗi!',
+            text: 'Vui lòng chọn một địa chỉ để xóa!',
+            icon: 'error',
+            confirmButtonColor: '#dc2626'
+        });
         return;
     }
-    if (confirm('Xóa địa chỉ này?')) {
-        document.getElementById('deleteAddressId').value = selectedRadio.value;
-        document.getElementById('deleteForm').action = '/profile/address/delete/' + selectedRadio.value + '/';
-        document.getElementById('deleteForm').submit();
-    }
+    
+    showConfirmDialog('Xác nhận xóa địa chỉ', 'Bạn có chắc chắn muốn xóa địa chỉ này không?', 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('deleteAddressId').value = selectedRadio.value;
+                document.getElementById('deleteForm').action = '/profile/address/delete/' + selectedRadio.value + '/';
+                document.getElementById('deleteForm').submit();
+            }
+        });
 }
 
 /**
@@ -60,35 +69,52 @@ function deleteSelectedAddress() {
  * @param {string} voucherId - Voucher ID to delete
  */
 function deleteSingleVoucher(voucherId) {
-    if (confirm('Bạn có chắc muốn xóa voucher này?')) {
-        const form = document.getElementById('deleteVouchersForm');
-        if (form) {
-            const formData = new FormData(form);
-            formData.append('voucher_ids[]', voucherId);
-            
-            fetch(form.action, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message);
+    showConfirmDialog('Xác nhận xóa voucher', 'Bạn có chắc muốn xóa voucher này không?', 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                const form = document.getElementById('deleteVouchersForm');
+                if (form) {
+                    const formData = new FormData(form);
+                    formData.append('voucher_ids[]', voucherId);
+                    
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: 'Thành công!',
+                                text: data.message,
+                                icon: 'success',
+                                confirmButtonColor: '#16a34a'
+                            }).then(() => location.reload());
+                        } else {
+                            Swal.fire({
+                                title: 'Lỗi!',
+                                text: data.message,
+                                icon: 'error',
+                                confirmButtonColor: '#dc2626'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            title: 'Lỗi!',
+                            text: 'Có lỗi xảy ra khi xóa voucher.',
+                            icon: 'error',
+                            confirmButtonColor: '#dc2626'
+                        });
+                    });
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Có lỗi xảy ra khi xóa voucher.');
-            });
-        }
-    }
+            }
+        });
 }
 
 /**
@@ -96,18 +122,28 @@ function deleteSingleVoucher(voucherId) {
  * @param {number} addressId - Address ID to set as default
  */
 function setDefaultAddress(addressId) {
-    if (confirm('Đặt địa chỉ này làm mặc định?')) {
-        fetch('/profile/address/default/' + addressId + '/', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'X-Requested-With': 'XMLHttpRequest'
+    showConfirmDialog('Xác nhận đặt địa chỉ mặc định', 'Bạn có chắc muốn đặt địa chỉ này làm mặc định không?', 'info')
+        .then((result) => {
+            if (result.isConfirmed) {
+                fetch('/profile/address/default/' + addressId + '/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        Swal.fire({
+                            title: 'Thành công!',
+                            text: 'Đã đặt địa chỉ mặc định.',
+                            icon: 'success',
+                            confirmButtonColor: '#16a34a'
+                        }).then(() => location.reload());
+                    }
+                });
             }
-        })
-        .then(response => {
-            if (response.ok) location.reload();
         });
-    }
 }
 
 /**

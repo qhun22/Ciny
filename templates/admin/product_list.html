@@ -60,6 +60,12 @@
                         👥 Quản lý người dùng
                     </a>
                     
+                    <!-- Quản lý khuyến mãi -->
+                    <a href="{% url 'admin_promotions' %}" 
+                       class="admin-sidebar-btn">
+                        🔥 Quản lý khuyến mãi
+                    </a>
+                    
                     <!-- Xem trang web -->
                     <a href="{% url 'home' %}" 
                        class="admin-sidebar-btn">
@@ -145,9 +151,10 @@
                                                 Sửa
                                             </a>
                                             <form method="POST" action="{% url 'admin_delete_product' product.id %}" 
-                                                  onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?')">
+                                                  id="deleteProduct{{ product.id }}">
                                                 {% csrf_token %}
-                                                <button type="submit" 
+                                                <button type="button" 
+                                                        onclick="confirmDeleteProduct('{{ product.id }}', '{{ product.name|escapejs }}')"
                                                         class="btn-delete">
                                                     Xóa
                                                 </button>
@@ -176,4 +183,20 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/**
+ * Xác nhận xóa sản phẩm
+ */
+function confirmDeleteProduct(productId, productName) {
+    showConfirmDialog('Xác nhận xóa sản phẩm', `Bạn có chắc chắn muốn xóa sản phẩm "${productName}" không?`, 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('deleteProduct' + productId).submit();
+            }
+        });
+}
+</script>
 {% endblock %}

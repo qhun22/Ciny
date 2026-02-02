@@ -99,6 +99,12 @@
                         Quan ly nguoi dung
                     </a>
                     
+                    <!-- Quan ly khuyen mai -->
+                    <a href="{% url 'admin_promotions' %}" 
+                       class="admin-sidebar-btn">
+                        🔥 Quan ly khuyen mai
+                    </a>
+                    
                     <!-- Xem trang web -->
                     <a href="{% url 'home' %}" 
                        class="admin-sidebar-btn">
@@ -397,32 +403,38 @@ let deleteImageIds = [];
 
 // Xoa anh khi click nut X
 function deleteImage(imageId) {
-    if (confirm('Ban co muon xoa anh nay?')) {
-        deleteImageIds.push(imageId);
-        document.getElementById('deleteImagesInput').value = deleteImageIds.join(',');
-        // An di thay vi xoa khoi DOM ngay lap tuc
-        event.target.closest('.image-item').style.display = 'none';
-    }
+    showConfirmDialog('Xác nhận xóa ảnh', 'Bạn có chắc chắn muốn xóa ảnh này không?', 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                deleteImageIds.push(imageId);
+                document.getElementById('deleteImagesInput').value = deleteImageIds.join(',');
+                // Ẩn đi thay vì xóa khỏi DOM ngay lập tức
+                event.target.closest('.image-item').style.display = 'none';
+            }
+        });
 }
 
 // Xoa anh chinh
 function deleteMainImage() {
-    if (confirm('Ban co muon xoa anh chinh? Anh mac dinh se bi thay the khi ban tai len anh moi.')) {
-        document.getElementById('deleteMainImageInput').value = 'true';
-        event.target.closest('.image-item').style.display = 'none';
-    }
+    showConfirmDialog('Xác nhận xóa ảnh chính', 'Bạn có chắc chắn muốn xóa ảnh chính không? Ảnh mặc định sẽ được thay thế khi bạn tải lên ảnh mới.', 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('deleteMainImageInput').value = 'true';
+                event.target.closest('.image-item').style.display = 'none';
+            }
+        });
 }
-
-// Mang luu ID cac storage can xoa
-let deleteStorageIds = [];
 
 // Xoa storage khi click nut X
 function deleteStorage(storageId) {
-    if (confirm('Ban co muon xoa tuy chon bo nho nay?')) {
-        deleteStorageIds.push(storageId);
-        document.getElementById('deleteStoragesInput').value = deleteStorageIds.join(',');
-        event.target.closest('.storage-item').style.display = 'none';
-    }
+    showConfirmDialog('Xác nhận xóa tùy chọn bộ nhớ', 'Bạn có chắc chắn muốn xóa tùy chọn bộ nhớ này không?', 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                deleteStorageIds.push(storageId);
+                document.getElementById('deleteStoragesInput').value = deleteStorageIds.join(',');
+                event.target.closest('.storage-item').style.display = 'none';
+            }
+        });
 }
 
 // Mang luu ID cac color can xoa
@@ -430,11 +442,14 @@ let deleteColorIds = [];
 
 // Xoa color khi click nut X
 function deleteColor(colorId) {
-    if (confirm('Ban co muon xoa tuy chon mau sac nay?')) {
-        deleteColorIds.push(colorId);
-        document.getElementById('deleteColorsInput').value = deleteColorIds.join(',');
-        event.target.closest('.color-item').style.display = 'none';
-    }
+    showConfirmDialog('Xác nhận xóa tùy chọn màu sắc', 'Bạn có chắc chắn muốn xóa tùy chọn màu sắc này không?', 'warning')
+        .then((result) => {
+            if (result.isConfirmed) {
+                deleteColorIds.push(colorId);
+                document.getElementById('deleteColorsInput').value = deleteColorIds.join(',');
+                event.target.closest('.color-item').style.display = 'none';
+            }
+        });
 }
 
 // Tinh gia khuyen mai theo thoi gian thuc
