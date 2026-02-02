@@ -5,8 +5,8 @@ import requests
 import json
 
 # Telegram Bot Configuration
-TELEGRAM_BOT_TOKEN = "8206672207:AAHY15AuxBDS9oMVsz8AVrodzGPx6_59Ul8"
-TELEGRAM_CHAT_ID = "5032505212"
+TELEGRAM_BOT_TOKEN = ""
+TELEGRAM_CHAT_ID = ""
 
 
 def send_telegram_message(message, parse_mode='HTML'):
