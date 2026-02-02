@@ -95,6 +95,7 @@ urlpatterns = [
     # Tra cứu đơn hàng
     path('orders/', views.order_tracking, name='order_tracking'),
     path('orders/<int:order_id>/', views.order_detail, name='order_detail'),
+    path('orders/<int:order_id>/cancel/', views.order_cancel, name='order_cancel'),
     
     # Góp ý
     path('profile/feedback/create/', views.feedback_create, name='feedback_create'),
@@ -111,6 +112,10 @@ urlpatterns = [
     
     # Admin - Quản lý góp ý
     path('qhun22/feedbacks/', views.admin_feedbacks, name='admin_feedbacks'),
+    
+    # Admin - Quản lý đánh giá
+    path('qhun22/reviews/', views.admin_reviews, name='admin_reviews'),
+    path('qhun22/reviews/<int:review_id>/delete/', views.admin_review_delete, name='admin_review_delete'),
     
     # Admin - Quản lý người dùng
     path('qhun22/users/', views.admin_users, name='admin_users'),

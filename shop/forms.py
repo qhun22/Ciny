@@ -79,28 +79,29 @@ class RegistrationForm(UserCreationForm):
 class ReviewForm(forms.ModelForm):
     """
     Form để người dùng đánh giá sản phẩm.
+    Không có chọn sao, chỉ có comment và tùy chọn ẩn danh.
     """
-    
-    rating = forms.ChoiceField(
-        choices=Review.RATING_CHOICES,
-        label="Đánh giá",
-        widget=forms.Select(attrs={'class': 'form-select'})
+    is_anonymous = forms.BooleanField(
+        label="Đánh giá ẩn danh",
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary'
+        })
     )
     comment = forms.CharField(
         label="Bình luận",
         widget=forms.Textarea(attrs={
             'rows': 4,
-            'class': 'form-textarea',
-            'placeholder': 'Chia sẻ trải nghiệm của bạn...'
+            'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition',
+            'placeholder': 'Chia sẻ trải nghiệm của bạn về sản phẩm...'
         })
     )
     
     class Meta:
         model = Review
-        fields = ['rating', 'comment']
+        fields = ['comment', 'is_anonymous']
         labels = {
-            'rating': 'Đánh giá',
-            'comment': 'Bình luận',
+            'comment': 'Đánh giá của bạn',
         }
 
 

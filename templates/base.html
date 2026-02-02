@@ -22,6 +22,8 @@
     
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
+    {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
     
@@ -142,7 +144,7 @@
     <footer class="bg-gray-800 text-white py-8">
         <div class="container mx-auto px-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {% comment %} <div class="bg-gray-700/50 rounded-xl p-5"> {% endcomment %}
+                {% comment %} <div class="bg-gray-700/50 rounded-xl p-5"> tạo box thay thế cho <div class="rounded-xl p-5"> {% endcomment %}
                 <div class="rounded-xl p-5">
                     <div class="flex flex-col items-center sm:items-start gap-3">
                         <a href="/" class="group">
@@ -230,6 +232,8 @@
     </footer>
     
     <script src="{% static 'js/scripts.js' %}"></script>
+    
+    {% block extra_js %}{% endblock %}
     
     {% if messages %}
     <div class="fixed bottom-4 right-4 z-50 space-y-2">

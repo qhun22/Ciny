@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-max-width">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Left Sidebar -->
+            <div class="admin-sidebar">
+                <div class="admin-sidebar-card">
+                    <h2 class="admin-sidebar-title">Quản trị</h2>
+                    
+                    <!-- Bảng điều khiển -->
+                    <a href="{% url 'admin_dashboard' %}" 
+                       class="admin-sidebar-btn">
+                        Bảng điều khiển
+                    </a>
+                    
+                    <!-- Quản lý sản phẩm -->
+                    <a href="{% url 'admin_product_list' %}" 
+                       class="admin-sidebar-btn">
+                        📦 Quản lý sản phẩm
+                    </a>
+                    
+                    <!-- Quản lý đơn hàng -->
+                    <a href="{% url 'admin_orders' %}" 
+                       class="admin-sidebar-btn">
+                        🛒 Quản lý đơn hàng
+                    </a>
+                    
+                    <!-- Quản lý mã giảm giá -->
+                    <a href="{% url 'admin_vouchers' %}" 
+                       class="admin-sidebar-btn">
+                        🎫 Quản lý voucher
+                    </a>
+                    
+                    <!-- Quản lý góp ý -->
+                    <a href="{% url 'admin_feedbacks' %}" 
+                       class="admin-sidebar-btn">
+                        💬 Quản lý góp ý
+                    </a>
+                    
+                    <!-- Quản lý đánh giá -->
+                    <a href="{% url 'admin_reviews' %}" 
+                       class="admin-sidebar-btn active">
+                        ⭐ Quản lý đánh giá
+                    </a>
+                    
+                    <!-- Quản lý người dùng -->
+                    <a href="{% url 'admin_users' %}" 
+                       class="admin-sidebar-btn">
+                        👥 Quản lý người dùng
+                    </a>
+                    
+                    <!-- Xem trang web -->
+                    <a href="{% url 'home' %}" 
+                       class="admin-sidebar-btn">
+                        🌐 Xem trang web
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Content -->
+            <div class="admin-content">
+                <!-- Header -->
+                <div class="admin-header">
+                    <h1 class="admin-title">⭐ Quản lý đánh giá</h1>
+                    <p class="admin-subtitle">Xem và xóa đánh giá của khách hàng</p>
+                </div>
+
+                {% if reviews %}
+                <!-- Danh sách đánh giá -->
+                <div class="admin-card">
+                    <div class="overflow-x-auto">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th class="py-3 px-4 text-left">ID</th>
+                                    <th class="py-3 px-4 text-left">Người dùng</th>
+                                    <th class="py-3 px-4 text-left">Sản phẩm</th>
+                                    <th class="py-3 px-4 text-left">Nội dung</th>
+                                    <th class="py-3 px-4 text-left">Ngày</th>
+                                    <th class="py-3 px-4 text-center">Ẩn danh</th>
+                                    <th class="py-3 px-4 text-center">Xóa</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for review in reviews %}
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="py-3 px-4 font-medium">#{{ review.id }}</td>
+                                    <td class="py-3 px-4">
+                                        <div>
+                                            <p class="font-medium">{{ review.get_display_name }}</p>
+                                            {% if not review.is_anonymous %}
+                                            <p class="text-sm text-gray-500">{{ review.user.email }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if review.product %}
+                                        <a href="{% url 'product_detail' review.product.id %}" 
+                                           class="text-primary hover:underline">
+                                            {{ review.product.brand }} {{ review.product.name }}
+                                        </a>
+                                        {% else %}
+                                        <span class="text-gray-400 italic">Đã xóa</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <p class="text-gray-600 max-w-xs truncate" title="{{ review.comment }}">
+                                            {{ review.comment|truncatechars:60 }}
+                                        </p>
+                                    </td>
+                                    <td class="py-3 px-4 text-gray-600">
+                                        {{ review.created_at|date:"d/m/Y H:i" }}
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        {% if review.is_anonymous %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            Ẩn danh
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Công khai
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        <form method="POST" action="{% url 'admin_review_delete' review.id %}" 
+                                              onsubmit="return confirm('Xóa đánh giá này?');">
+                                            {% csrf_token %}
+                                            <button type="submit" 
+                                                    class="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition"
+                                                    title="Xóa">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if reviews.has_other_pages %}
+                    <div class="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+                        <div class="text-sm text-gray-500">
+                            Trang {{ reviews.number }} / {{ reviews.paginator.num_pages }}
+                        </div>
+                        <div class="flex gap-2">
+                            {% if reviews.has_previous %}
+                            <a href="?page={{ reviews.previous_page_number }}" 
+                               class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
+                                Trước
+                            </a>
+                            {% endif %}
+                            {% if reviews.has_next %}
+                            <a href="?page={{ reviews.next_page_number }}" 
+                               class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
+                                Sau
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="admin-card">
+                    <div class="empty-state">
+                        <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                        </svg>
+                        <p class="text-gray-500">Chưa có đánh giá nào.</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

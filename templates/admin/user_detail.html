@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
@@ -45,6 +46,12 @@
                     <a href="{% url 'admin_feedbacks' %}" 
                        class="admin-sidebar-btn">
                         💬 Quản lý góp ý
+                    </a>
+                    
+                    <!-- Quản lý đánh giá -->
+                    <a href="{% url 'admin_reviews' %}" 
+                       class="admin-sidebar-btn">
+                        ⭐ Quản lý đánh giá
                     </a>
                     
                     <!-- Quản lý người dùng -->
@@ -204,7 +211,7 @@
                                 {% for order in orders %}
                                 <tr class="border-b hover:bg-gray-50">
                                     <td class="py-3 px-4 font-medium">#{{ order.id }}</td>
-                                    <td class="py-3 px-4 text-red-600 font-medium">{{ order.total|floatformat:"0"|intcomma }}đ</td>
+                                    <td class="py-3 px-4 text-red-600 font-medium">{{ order.total|format_number }}đ</td>
                                     <td class="py-3 px-4">
                                         <span class="status-badge 
                                             {% if order.status == 'completed' %}status-completed

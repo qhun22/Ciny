@@ -239,16 +239,8 @@ class ColorOption(models.Model):
 class Review(models.Model):
     """
     Model cho đánh giá và bình luận của khách hàng.
-    Chỉ người dùng đăng nhập mới có thể đánh giá.
+    Chỉ người dùng đã mua sản phẩm mới có thể đánh giá.
     """
-    
-    RATING_CHOICES = [
-        (1, '1 sao'),
-        (2, '2 sao'),
-        (3, '3 sao'),
-        (4, '4 sao'),
-        (5, '5 sao'),
-    ]
     
     product = models.ForeignKey(
         Product, 
@@ -262,20 +254,36 @@ class Review(models.Model):
         related_name='reviews',
         verbose_name="Người dùng"
     )
-    rating = models.PositiveIntegerField(
-        choices=RATING_CHOICES, 
-        verbose_name="Đánh giá"
-    )
     comment = models.TextField(verbose_name="Bình luận")
+    is_anonymous = models.BooleanField(
+        default=False,
+        verbose_name="Đánh giá ẩn danh"
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ngày đánh giá")
     
     class Meta:
-        # Mỗi user chỉ được đánh giá một lần cho mỗi sản phẩm
-        unique_together = ['product', 'user']
+        # Mỗi user chỉ được đánh giá một lần cho mỗi sản phẩm (mỗi lần mua)
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.user.username} - {self.product.name} ({self.rating} sao)"
+        return f"{self.user.username} - {self.product.name}"
+    
+    def get_display_name(self):
+        """Trả về tên hiển thị (có thể ẩn danh)."""
+        if self.is_anonymous:
+            # Hiển thị dạng: T*******
+            username = self.user.username
+            if len(username) >= 3:
+                return username[:1] + '*' * (len(username) - 1)
+            else:
+                return '*' * len(username)
+        return self.user.username
+    
+    def get_display_name_full(self):
+        """Trả về tên đầy đủ hoặc ẩn danh."""
+        if self.is_anonymous:
+            return "Ẩn danh"
+        return self.user.get_full_name() or self.user.username
 
 
 class Coupon(models.Model):
@@ -642,6 +650,7 @@ class OrderItem(models.Model):
         decimal_places=0, 
         verbose_name="Giá"
     )
+    is_reviewed = models.BooleanField(default=False, verbose_name="Đã đánh giá")
     
     class Meta:
         verbose_name = "Sản phẩm trong đơn hàng"

@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
@@ -45,6 +46,12 @@
                     <a href="{% url 'admin_feedbacks' %}" 
                        class="admin-sidebar-btn">
                         💬 Quản lý góp ý
+                    </a>
+                    
+                    <!-- Quản lý đánh giá -->
+                    <a href="{% url 'admin_reviews' %}" 
+                       class="admin-sidebar-btn">
+                        ⭐ Quản lý đánh giá
                     </a>
                     
                     <!-- Quản lý người dùng -->
@@ -168,9 +175,9 @@
                                             {% if item.color %}{{ item.color }}{% endif %}
                                         </p>
                                     </td>
-                                    <td class="py-3 px-4">{{ item.price|floatformat:"0"|intcomma }}đ</td>
+                                    <td class="py-3 px-4">{{ item.price|format_number }}đ</td>
                                     <td class="py-3 px-4">{{ item.quantity }}</td>
-                                    <td class="py-3 px-4 text-red-600 font-medium">{{ item.subtotal|floatformat:"0"|intcomma }}đ</td>
+                                    <td class="py-3 px-4 text-red-600 font-medium">{{ item.subtotal|format_number }}đ</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -184,17 +191,17 @@
                         <div class="w-full md:w-1/3">
                             <div class="flex justify-between py-2 border-b">
                                 <span class="text-gray-600">Tạm tính:</span>
-                                <span class="font-medium">{{ order.subtotal|floatformat:"0"|intcomma }}đ</span>
+                                <span class="font-medium">{{ order.subtotal|format_number }}đ</span>
                             </div>
                             {% if order.discount_amount > 0 %}
                             <div class="flex justify-between py-2 border-b text-green-600">
                                 <span>Giảm giá:</span>
-                                <span>-{{ order.discount_amount|floatformat:"0"|intcomma }}đ</span>
+                                <span>-{{ order.discount_amount|format_number }}đ</span>
                             </div>
                             {% endif %}
                             <div class="flex justify-between py-2">
                                 <span class="text-lg font-bold">Tổng tiền:</span>
-                                <span class="text-lg font-bold text-red-600">{{ order.total|floatformat:"0"|intcomma }}đ</span>
+                                <span class="text-lg font-bold text-red-600">{{ order.total|format_number }}đ</span>
                             </div>
                         </div>
                     </div>
@@ -212,6 +219,7 @@
     </div>
 </div>
 {% endblock %}
+
 
 
 

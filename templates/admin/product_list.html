@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
@@ -45,6 +46,12 @@
                     <a href="{% url 'admin_feedbacks' %}" 
                        class="admin-sidebar-btn">
                         💬 Quản lý góp ý
+                    </a>
+                    
+                    <!-- Quản lý đánh giá -->
+                    <a href="{% url 'admin_reviews' %}" 
+                       class="admin-sidebar-btn">
+                        ⭐ Quản lý đánh giá
                     </a>
                     
                     <!-- Quản lý người dùng -->
@@ -114,10 +121,10 @@
                                         </div>
                                     </td>
                                     <td class="py-3 px-4 text-gray-500 line-through">
-                                        {{ product.original_price|floatformat:"0"|intcomma }}đ
+                                        {{ product.original_price|format_number }}đ
                                     </td>
                                     <td class="py-3 px-4 text-red-600 font-medium">
-                                        {{ product.sale_price|floatformat:"0"|intcomma }}đ
+                                        {{ product.sale_price|format_number }}đ
                                     </td>
                                     <td class="py-3 px-4">
                                         {% if product.discount_percent > 0 %}

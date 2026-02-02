@@ -57,9 +57,14 @@ class ProductAdmin(admin.ModelAdmin):
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
     """Admin cho model Review."""
-    list_display = ['user', 'product', 'rating', 'created_at']
-    list_filter = ['rating', 'created_at']
-    search_fields = ['user__username', 'product__name']
+    list_display = ['user', 'product', 'get_display_name', 'is_anonymous', 'created_at']
+    list_filter = ['is_anonymous', 'created_at']
+    search_fields = ['user__username', 'product__name', 'comment']
+    
+    def get_display_name(self, obj):
+        """Hiển thị tên đã ẩn danh nếu cần."""
+        return obj.get_display_name()
+    get_display_name.short_description = 'Người dùng'
 
 
 @admin.register(Coupon)

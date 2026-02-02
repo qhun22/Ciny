@@ -216,12 +216,12 @@
                 <div class="flex items-start gap-4">
                     <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <span class="text-sm font-medium text-gray-600">
-                            {{ review.user.username|upper|make_list|first }}
+                            {{ review.get_display_name|upper|make_list|first }}
                         </span>
                     </div>
                     <div class="flex-grow">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="font-semibold text-gray-800">{{ review.user.username }}</span>
+                            <span class="font-semibold text-gray-800">{{ review.get_display_name }}</span>
                             <span class="text-gray-400 text-sm">{{ review.created_at|date:"d/m/Y H:i" }}</span>
                         </div>
                         <p class="text-gray-600">{{ review.comment }}</p>
@@ -249,6 +249,13 @@
                               placeholder="Chia se truong hop cua ban..."
                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"></textarea>
                 </div>
+                <div class="mb-4 flex items-center gap-2">
+                    <input type="checkbox" name="is_anonymous" id="id_is_anonymous" value="false"
+                           class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary">
+                    <label for="id_is_anonymous" class="text-gray-600 text-sm cursor-pointer">
+                        Đánh giá ẩn danh (tên sẽ hiển thị dạng T*******)
+                    </label>
+                </div>
                 <button type="submit" 
                         class="bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-600 hover:shadow-lg transition-all duration-300">
                     Gui danh gia
@@ -260,6 +267,14 @@
             <p class="text-gray-500">
                 <a href="{% url 'login' %}" class="text-primary font-medium hover:underline">Dang nhap</a> de danh gia san pham
             </p>
+        </div>
+        {% elif not has_purchased %}
+        <div class="bg-white rounded-xl border border-orange-200 p-6 text-center bg-orange-50">
+            <svg class="w-12 h-12 text-orange-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <p class="text-orange-700 font-medium mb-2">Ban can mua san pham nay de co the danh gia</p>
+            <p class="text-orange-600 text-sm">Mua san pham hoan thanh se mo khoa chuc nang danh gia</p>
         </div>
         {% endif %}
     </div>

@@ -48,6 +48,12 @@
                         💬 Quản lý góp ý
                     </a>
                     
+                    <!-- Quản lý đánh giá -->
+                    <a href="{% url 'admin_reviews' %}" 
+                       class="admin-sidebar-btn">
+                        ⭐ Quản lý đánh giá
+                    </a>
+                    
                     <!-- Quản lý người dùng -->
                     <a href="{% url 'admin_users' %}" 
                        class="admin-sidebar-btn">
@@ -114,11 +120,11 @@
                                         {% if voucher.discount_type == 'percent' %}
                                         <span class="text-red-600 font-bold text-lg">-{{ voucher.discount_value }}%</span>
                                         {% else %}
-                                        <span class="text-red-600 font-bold text-lg">-{{ voucher.discount_value|floatformat:"0"|intcomma }}đ</span>
+                                        <span class="text-red-600 font-bold text-lg">-{{ voucher.discount_value|format_number }}đ</span>
                                         {% endif %}
                                     </td>
                                     <td class="py-3 px-4 text-gray-600">
-                                        {{ voucher.min_order|floatformat:"0"|intcomma }}đ
+                                        {{ voucher.min_order|format_number }}đ
                                     </td>
                                     <td class="py-3 px-4 text-gray-600">
                                         {% if voucher.max_usage_per_user > 0 %}
@@ -194,7 +200,7 @@
                                                 </a>
                                                 <span>-</span>
                                                 <span>{{ order.user.username|default:"Anonymous" }}</span>
-                                                <span class="text-gray-400">({{ order.total|floatformat:"0"|intcomma }}đ)</span>
+                                                <span class="text-gray-400">({{ order.total|format_number }}đ)</span>
                                             </div>
                                             {% endfor %}
                                         </div>

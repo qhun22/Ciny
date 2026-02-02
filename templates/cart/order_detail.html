@@ -3,12 +3,39 @@
 
 {% block title %}{{ page_title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.back-to-orders-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #f3f0ff;
+    color: #6a4ec1;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    transition: all 0.2s;
+    margin-bottom: 1rem;
+}
+.back-to-orders-btn:hover {
+    background-color: #e5e0ff;
+}
+.back-to-orders-btn svg {
+    flex-shrink: 0;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <!-- Header -->
     <div class="mb-6">
-        <a href="{% url 'order_tracking' %}" class="text-primary hover:underline mb-4 inline-block">
-            ← Quay lại tra cứu đơn hàng
+        <a href="{% url 'order_tracking' %}" class="back-to-orders-btn">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            <span>Quay lại tra cứu đơn hàng</span>
         </a>
         <h1 class="text-3xl font-bold text-gray-800">Chi tiết đơn hàng #{{ order.id }}</h1>
     </div>

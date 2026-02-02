@@ -98,16 +98,34 @@ def product_detail(request, product_id):
     # Lấy tất cả đánh giá của sản phẩm này
     reviews = product.reviews.all()
     
-    # Tính điểm đánh giá trung bình
-    avg_rating = reviews.aggregate(avg=models.Avg('rating'))['avg'] or 0
-    
-    # Xử lý form đánh giá (chỉ khi user đã đăng nhập)
+    # Xử lý form đánh giá (chỉ khi user đã đăng nhập VÀ đã mua sản phẩm)
     review_form = None
+    can_review = False
+    has_purchased = False
+    
     if request.user.is_authenticated:
-        # Kiểm tra xem user đã đánh giá sản phẩm này chưa
-        user_has_reviewed = reviews.filter(user=request.user).exists()
-        if not user_has_reviewed:
-            review_form = ReviewForm()
+        # Kiểm tra xem user đã mua sản phẩm này chưa (đơn hàng đã hoàn thành)
+        user_completed_orders = Order.objects.filter(
+            user=request.user,
+            status='completed'
+        ).prefetch_related('items')
+        
+        # Tìm các order items chưa được đánh giá
+        purchasable_items = []
+        for order in user_completed_orders:
+            for item in order.items.all():
+                if item.product and item.product.id == product_id and not item.is_reviewed:
+                    purchasable_items.append(item)
+        
+        has_purchased = len(purchasable_items) > 0
+        
+        # Kiểm tra xem user có thể đánh giá không (đã mua và chưa đánh giá)
+        if has_purchased:
+            # Kiểm tra user đã đánh giá sản phẩm này chưa
+            user_has_reviewed = reviews.filter(user=request.user).exists()
+            if not user_has_reviewed:
+                review_form = ReviewForm()
+                can_review = True
     
     # Xử lý form mã giảm giá
     coupon_form = CouponForm()
@@ -115,9 +133,10 @@ def product_detail(request, product_id):
     context = {
         'product': product,
         'reviews': reviews,
-        'avg_rating': round(avg_rating, 1),
         'review_form': review_form,
         'coupon_form': coupon_form,
+        'can_review': can_review,
+        'has_purchased': has_purchased,
         'page_title': f'{product.brand} {product.name} - Chi tiết sản phẩm',
     }
     
@@ -128,13 +147,29 @@ def product_detail(request, product_id):
 def add_review(request, product_id):
     """
     Xử lý thêm đánh giá mới cho sản phẩm.
-    Chỉ user đã đăng nhập mới có thể đánh giá.
+    Chỉ user đã đăng nhập VÀ đã mua sản phẩm mới có thể đánh giá.
     """
     product = get_object_or_404(Product, id=product_id)
     
     # Kiểm tra user đã đăng nhập chưa
     if not request.user.is_authenticated:
         messages.error(request, 'Bạn cần đăng nhập để đánh giá sản phẩm.')
+        return redirect('product_detail', product_id=product_id)
+    
+    # Kiểm tra user đã mua sản phẩm này chưa (đơn hàng đã hoàn thành và chưa đánh giá)
+    user_completed_orders = Order.objects.filter(
+        user=request.user,
+        status='completed'
+    ).prefetch_related('items')
+    
+    purchasable_items = []
+    for order in user_completed_orders:
+        for item in order.items.all():
+            if item.product and item.product.id == product_id and not item.is_reviewed:
+                purchasable_items.append(item)
+    
+    if not purchasable_items:
+        messages.error(request, 'Bạn cần mua sản phẩm này trước khi đánh giá.')
         return redirect('product_detail', product_id=product_id)
     
     # Kiểm tra user đã đánh giá sản phẩm này chưa
@@ -147,7 +182,16 @@ def add_review(request, product_id):
         review = form.save(commit=False)
         review.product = product
         review.user = request.user
+        # Xử lý checkbox is_anonymous
+        review.is_anonymous = 'is_anonymous' in request.POST
         review.save()
+        
+        # Đánh dấu một order item là đã đánh giá
+        # (mỗi lần mua chỉ được đánh giá 1 lần)
+        if purchasable_items:
+            purchasable_items[0].is_reviewed = True
+            purchasable_items[0].save()
+        
         messages.success(request, 'Cảm ơn bạn đã đánh giá sản phẩm!')
     else:
         messages.error(request, 'Vui lòng nhập đầy đủ thông tin đánh giá.')
@@ -540,8 +584,8 @@ def profile_view(request):
         models.Q(coupon__expires_at__gt=timezone.now())
     ).select_related('coupon').order_by('-created_at')
     
-    # Lấy danh sách đơn hàng của user
-    orders = Order.objects.filter(user=request.user).prefetch_related('items').order_by('-created_at')
+    # Lấy danh sách đơn hàng của user (prefetech items và product để hiển thị ảnh)
+    orders = Order.objects.filter(user=request.user).prefetch_related('items__product').order_by('-created_at')
     
     # Lấy danh sách góp ý của user
     feedbacks = Feedback.objects.filter(user=request.user).order_by('-created_at')
@@ -1462,6 +1506,27 @@ def order_detail(request, order_id):
 
 
 @require_POST
+@login_required
+def order_cancel(request, order_id):
+    """
+    Hủy đơn hàng (chỉ khi đơn hàng đang ở trạng thái 'pending').
+    """
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    # Chỉ cho phép hủy khi đơn hàng đang ở trạng thái 'pending' (Chờ duyệt)
+    if order.status != 'pending':
+        messages.error(request, 'Chỉ có thể hủy đơn hàng khi đang chờ duyệt.')
+        return redirect('order_tracking')
+    
+    # Cập nhật trạng thái đơn hàng
+    order.status = 'cancelled'
+    order.save()
+    
+    messages.success(request, f'Đơn hàng #{order.id} đã được hủy thành công.')
+    return redirect('order_tracking')
+
+
+@require_POST
 def apply_coupon(request):
     """
     Áp dụng mã giảm giá.
@@ -1762,6 +1827,12 @@ def admin_order_detail(request, order_id):
         new_status = request.POST.get('status')
         if new_status:
             order.status = new_status
+            # Tự động cập nhật trạng thái thanh toán khi đơn hàng hoàn thành
+            if new_status == 'completed':
+                # Nếu là thanh toán COD, tự động đánh dấu đã thanh toán
+                if order.payment_method == 'cod':
+                    order.payment_status = 'paid'
+                # Nếu là thanh toán online, giữ nguyên
             order.save()
             messages.success(request, 'Cập nhật trạng thái đơn hàng thành công!')
             return redirect('admin_order_detail', order_id=order_id)
@@ -2049,4 +2120,44 @@ def admin_user_delete(request, user_id):
         messages.success(request, 'Xóa người dùng thành công!')
     
     return redirect('admin_users')
+
+
+@user_passes_test(is_admin)
+def admin_reviews(request):
+    """
+    Trang quản lý đánh giá (admin).
+    Hiển thị danh sách đánh giá với thông tin người dùng và sản phẩm.
+    Chỉ cho phép xóa đánh giá.
+    """
+    from django.core.paginator import Paginator
+    
+    reviews = Review.objects.all().select_related('user', 'product').order_by('-created_at')
+    
+    # Phân trang - 10 đánh giá mỗi trang
+    paginator = Paginator(reviews, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'reviews': page_obj,
+        'page_title': 'Quản lý đánh giá - Admin',
+    }
+    
+    return render(request, 'admin/reviews.html', context)
+
+
+@user_passes_test(is_admin)
+@require_POST
+def admin_review_delete(request, review_id):
+    """
+    Xóa đánh giá (admin).
+    """
+    review = get_object_or_404(Review, id=review_id)
+    product_name = review.product.name if review.product else 'Sản phẩm đã xóa'
+    user_username = review.user.username
+    
+    review.delete()
+    messages.success(request, f'Đã xóa đánh giá của {user_username} cho sản phẩm {product_name}')
+    
+    return redirect('admin_reviews')
 

@@ -12,7 +12,7 @@ function showTab(tab) {
         const btnEl = document.getElementById('btn-' + t);
         if (tabEl) tabEl.classList.add('hidden');
         if (btnEl) {
-            btnEl.className = 'w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors hover:bg-gray-50 text-gray-600';
+            btnEl.className = 'profile-tab-btn';
         }
     });
     
@@ -21,7 +21,7 @@ function showTab(tab) {
     const selectedBtn = document.getElementById('btn-' + tab);
     if (selectedTab) selectedTab.classList.remove('hidden');
     if (selectedBtn) {
-        selectedBtn.className = 'w-full text-left px-4 py-3 rounded-lg font-medium mb-2 transition-colors bg-blue-600 text-white';
+        selectedBtn.className = 'profile-tab-btn active';
     }
     
     // Save preference to localStorage
@@ -139,6 +139,34 @@ function toggleAllVouchers(checkbox) {
     checkboxes.forEach(cb => {
         cb.checked = checkbox.checked;
     });
+}
+
+/**
+ * Show cancel order modal
+ * @param {number} orderId - Order ID to cancel
+ */
+function showCancelModal(orderId) {
+    const modal = document.getElementById('cancelOrderModal');
+    const orderIdSpan = document.getElementById('cancelOrderId');
+    const form = document.getElementById('cancelOrderForm');
+    
+    if (modal && orderIdSpan && form) {
+        orderIdSpan.textContent = orderId;
+        form.action = '/orders/' + orderId + '/cancel/';
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+}
+
+/**
+ * Hide cancel order modal
+ */
+function hideCancelModal() {
+    const modal = document.getElementById('cancelOrderModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = ''; // Restore scrolling
+    }
 }
 
 // Initialize on page load
